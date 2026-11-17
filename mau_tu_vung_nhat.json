@@ -1,0 +1,65 @@
+{
+  "name": "Mẫu từ vựng N5",
+  "words": [
+    {
+      "kanji": "日本",
+      "hira": "にほん",
+      "vi": "Nhật Bản"
+    },
+    {
+      "kanji": "学校",
+      "hira": "がっこう",
+      "vi": "Trường học"
+    },
+    {
+      "kanji": "先生",
+      "hira": "せんせい",
+      "vi": "Giáo viên"
+    },
+    {
+      "kanji": "学生",
+      "hira": "がくせい",
+      "vi": "Học sinh"
+    },
+    {
+      "kanji": "友達",
+      "hira": "ともだち",
+      "vi": "Bạn bè"
+    },
+    {
+      "kanji": "家族",
+      "hira": "かぞく",
+      "vi": "Gia đình"
+    },
+    {
+      "kanji": "水",
+      "hira": "みず",
+      "vi": "Nước"
+    },
+    {
+      "kanji": "本",
+      "hira": "ほん",
+      "vi": "Sách"
+    },
+    {
+      "kanji": "電車",
+      "hira": "でんしゃ",
+      "vi": "Tàu điện"
+    },
+    {
+      "kanji": "時間",
+      "hira": "じかん",
+      "vi": "Thời gian"
+    },
+    {
+      "kanji": "猫",
+      "hira": "ねこ",
+      "vi": "Con mèo"
+    },
+    {
+      "kanji": "花",
+      "hira": "はな",
+      "vi": "Hoa"
+    }
+  ]
+}

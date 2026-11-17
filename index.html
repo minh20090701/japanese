@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#111b26" />
+  <meta name="description" content="Luyện từ vựng tiếng Nhật, theo dõi thời gian và số từ mỗi ngày; kho bài học đồng bộ Supabase." />
+  <title>KOTOBA LAB V3 — Học từ vựng & lịch học tiếng Nhật</title>
+  <style>
+    :root {
+      --bg: #0b1520; --bg2: #101e2c; --surface: #142434; --surface2: #1b2e41;
+      --line: rgba(211,232,232,.12); --text: #eef5f3; --muted: #9aafbc;
+      --accent: #f2ad8e; --accent-strong:#ffb28e; --mint:#82d6be; --red:#ff8d8e;
+      --shadow: 0 20px 50px rgba(0,0,0,.18); --radius: 20px;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; color:var(--text); background:var(--bg); font-family:Inter, -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,"Noto Sans JP",sans-serif; line-height:1.5; }
+    button,input,textarea,select { font:inherit; }
+    button { cursor:pointer; }
+    button:disabled { cursor:not-allowed; opacity:.48; }
+    a { color:inherit; }
+    :focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+    .app { display:grid; grid-template-columns:252px minmax(0,1fr); min-height:100vh; }
+    .sidebar { background:#0c1722; border-right:1px solid var(--line); padding:29px 17px 20px; display:flex; flex-direction:column; gap:34px; position:sticky; top:0; height:100vh; }
+    .brand { display:flex; align-items:center; gap:12px; padding:0 12px; }
+    .brand-emblem { width:41px; height:41px; border-radius:13px; display:grid; place-items:center; font-size:23px; font-weight:800; color:#142533; background:var(--accent); transform:rotate(-4deg); box-shadow:0 6px 18px #f2ad8e26; }
+    .brand-name { letter-spacing:2.1px; font-size:15px; font-weight:850; line-height:1.3; }
+    .brand-sub { font-size:10px; letter-spacing:1.2px; color:var(--muted); }
+    .side-label { padding:0 14px; color:#657e91; font-weight:800; font-size:10px; letter-spacing:1.9px; margin-bottom:10px; }
+    .nav { display:grid; gap:6px; }
+    .nav-btn { background:transparent; border:1px solid transparent; color:#a6b8c4; display:flex; align-items:center; gap:13px; width:100%; text-align:left; padding:12px 14px; border-radius:12px; font-size:13px; font-weight:650; transition:.2s; }
+    .nav-btn svg { width:18px; height:18px; flex-shrink:0; }
+    .nav-btn:hover { background:#172838; color:var(--text); }
+    .nav-btn.active { color:#ffd3bf; background:#3a3032; border-color:#eea58829; }
+    .side-bottom { margin-top:auto; border:1px solid var(--line); background:linear-gradient(150deg,#1b2f3f,#152433); padding:17px; border-radius:17px; }
+    .side-bottom .jp { color:var(--accent); font-size:22px; font-weight:700; }
+    .side-bottom p { color:var(--muted); font-size:11px; margin:8px 0 0; }
+    .side-foot { font-size:10px; color:#61798a; text-align:center; }
+    .main { min-width:0; }
+    .topbar { height:79px; display:flex; align-items:center; justify-content:space-between; padding:0 clamp(22px,4.4vw,64px); border-bottom:1px solid var(--line); background:#0c1724b8; backdrop-filter:blur(12px); }
+    .breadcrumbs { font-size:12px; color:#9db0bd; }
+    .breadcrumbs b { color:#eef4f2; }
+    .topbar-right { display:flex; align-items:center; gap:16px; }
+    .top-tip { color:#829baa; font-size:12px; }
+    .avatar { width:34px; height:34px; display:grid; place-items:center; border-radius:12px; border:1px solid #bdcbbf2e; background:#233d49; color:#a6e0c2; font-size:17px; }
+    .content { max-width:1320px; margin:0 auto; padding:34px clamp(20px,4.4vw,64px) 72px; }
+    .eyebrow { letter-spacing:2.2px; text-transform:uppercase; font-size:10px; color:var(--accent); font-weight:850; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { font-size:clamp(27px,3vw,38px); font-weight:800; letter-spacing:-1px; line-height:1.25; margin:8px 0 12px; }
+    h2 { font-size:19px; margin-bottom:4px; font-weight:760; letter-spacing:-.4px; }
+    h3 { font-size:16px; font-weight:730; margin-bottom:6px; }
+    .lead { color:var(--muted); font-size:13px; margin-bottom:0; }
+    .hero { position:relative; overflow:hidden; display:grid; grid-template-columns:minmax(0,1fr) 240px; min-height:264px; align-items:center; border-radius:24px; padding:33px clamp(24px,4vw,46px); background:radial-gradient(circle at 82% 20%, #36485d 0%, transparent 44%),linear-gradient(115deg,#203b4b,#192b3c 75%); border:1px solid #ffffff14; }
+    .hero h1 { max-width:470px; }
+    .hero .lead { max-width:450px; }
+    .hero-actions { display:flex; gap:11px; margin-top:25px; flex-wrap:wrap; }
+    .hero-art { position:relative; height:210px; display:grid; place-items:center; }
+    .hero-sun { width:205px; height:205px; border-radius:50%; background:linear-gradient(140deg,#e6a184,#f2c9b1); display:grid; place-items:center; color:#2c3742; font-size:114px; font-weight:500; transform:rotate(-9deg); opacity:.95; box-shadow:0 16px 80px #e7aa8835; }
+    .hero-vertical { position:absolute; right:0px; top:13px; writing-mode:vertical-rl; letter-spacing:6px; color:#dce2d6a6; font-size:12px; }
+    .hero-decor { position:absolute; right:25%; top:4%; width:22px; height:22px; transform:rotate(35deg); border:2px solid #f6d7ca; opacity:.8; border-radius:8px 2px 8px 2px; }
+    .btn { border:1px solid transparent; display:inline-flex; align-items:center; justify-content:center; gap:9px; border-radius:11px; padding:11px 16px; min-height:42px; font-size:12px; font-weight:780; transition:background .18s,transform .18s,border .18s; white-space:nowrap; }
+    .btn svg { width:16px; height:16px; }
+    .btn:hover:not(:disabled) { transform:translateY(-1px); }
+    .btn.primary { background:var(--accent); color:#1a2431; box-shadow:0 6px 18px #00000017; }
+    .btn.primary:hover:not(:disabled) { background:#ffbca0; }
+    .btn.secondary { background:#ffffff12; border-color:#ffffff24; color:var(--text); }
+    .btn.secondary:hover:not(:disabled) { background:#ffffff21; }
+    .btn.ghost { background:transparent; color:var(--muted); border-color:var(--line); }
+    .btn.ghost:hover:not(:disabled) { color:var(--text); background:#ffffff0d; }
+    .btn.danger { background:#64373b; color:#ffdadd; border-color:#985359; }
+    .btn.small { min-height:34px; padding:8px 11px; border-radius:9px; font-size:11px; }
+    .btn.icon-only { width:35px; min-height:35px; padding:0; }
+    .section-head { display:flex; align-items:end; justify-content:space-between; gap:14px; margin:29px 0 14px; }
+    .section-head p { font-size:12px; color:var(--muted); margin:0; }
+    .stats-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-top:18px; }
+    .stat-card { padding:20px 20px 18px; border:1px solid var(--line); background:var(--surface); border-radius:17px; min-width:0; }
+    .stat-top { display:flex; justify-content:space-between; color:#b7c9cf; align-items:center; gap:6px; font-size:11px; }
+    .stat-icon { width:35px; height:35px; display:grid; place-items:center; background:#29404d; color:var(--mint); border-radius:11px; }
+    .stat-icon svg { width:17px; height:17px; }
+    .stat-value { font-size:28px; font-weight:820; line-height:1.2; margin-top:12px; letter-spacing:-.8px; }
+    .stat-foot { font-size:10px; color:#7f9aaa; margin-top:5px; }
+    .lesson-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+    .lesson-card { padding:20px; border-radius:18px; border:1px solid var(--line); background:var(--surface); display:flex; flex-direction:column; min-height:215px; }
+    .lesson-card:hover { border-color:#f0a78c54; }
+    .lesson-card-top { display:flex; justify-content:space-between; gap:10px; align-items:start; }
+    .lesson-chip { font-size:10px; letter-spacing:1.3px; font-weight:760; padding:5px 8px; color:#9ce4cf; background:#274740; border-radius:7px; }
+    .lesson-chip.demo { color:#ffd0ae; background:#473a36; }
+    .lesson-art { color:#80b5b0; font-size:25px; opacity:.9; }
+    .lesson-card h3 { margin-top:18px; min-height:44px; line-height:1.34; }
+    .lesson-meta { font-size:11px; color:var(--muted); }
+    .lesson-bottom { margin-top:auto; padding-top:14px; display:flex; align-items:center; justify-content:space-between; gap:9px; }
+    .empty-card { padding:35px 20px; border:1px dashed #ffffff29; text-align:center; border-radius:18px; background:#1726338c; grid-column:1/-1; }
+    .empty-card .big { font-size:36px; margin-bottom:5px; }
+    .empty-card p { color:var(--muted); font-size:12px; }
+    .page-heading { margin:1px 0 26px; display:flex; align-items:end; justify-content:space-between; gap:20px; }
+    .page-heading p { color:var(--muted); font-size:13px; margin-bottom:0; }
+    .panel { padding:24px; border:1px solid var(--line); border-radius:20px; background:var(--surface); }
+    .panel + .panel { margin-top:15px; }
+    .panel-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+    .setup-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .field { display:grid; gap:7px; min-width:0; }
+    .field label { color:#b9ced0; font-size:12px; font-weight:680; }
+    input[type=text], input[type=email], input[type=password], select, textarea, input[type=number] { width:100%; min-width:0; padding:12px 13px; color:var(--text); border:1px solid #365061; background:#0f1e2b; border-radius:11px; outline:none; font-size:13px; }
+    input::placeholder,textarea::placeholder { color:#748a9a; }
+    input:focus,select:focus,textarea:focus { border-color:#eeb396; box-shadow:0 0 0 3px #f4b39219; }
+    textarea { resize:vertical; min-height:160px; font-size:12px; line-height:1.8; }
+    select option { background:#0f1e2b; }
+    .mode-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:12px 0 20px; }
+    .mode-option { border:1px solid #395064; background:#132333; border-radius:14px; padding:17px 13px; text-align:left; color:var(--text); min-height:118px; transition:.2s; display:flex; flex-direction:column; align-items:flex-start; gap:7px; }
+    .mode-option:hover:not(:disabled) { border-color:#b9a497; }
+    .mode-option.selected { background:#3b3234; border-color:#e6a387; box-shadow:inset 0 0 0 1px #e6a38730; }
+    .mode-option .mode-icon { color:var(--accent); font-size:20px; font-weight:730; }
+    .mode-option strong { font-size:12px; }
+    .mode-option span:last-child { color:var(--muted); font-size:10px; }
+    .helper { color:var(--muted); font-size:11px; margin-top:10px; }
+    .setting-bottom { display:flex; justify-content:space-between; gap:12px; align-items:end; margin-top:8px; }
+    .setting-bottom .field { width:170px; }
+    .note { color:var(--muted); font-size:11px; }
+    .quiz-shell { max-width:810px; margin:0 auto; }
+    .quiz-status { display:flex; align-items:center; justify-content:space-between; gap:20px; color:var(--muted); font-size:12px; margin-bottom:14px; }
+    .progress-track { height:7px; border-radius:99px; overflow:hidden; background:#263949; margin-bottom:22px; }
+    .progress-fill { background:linear-gradient(90deg,var(--mint),#b6dfc3); height:100%; border-radius:99px; transition:width .3s ease; }
+    .question-panel { background:radial-gradient(circle at 100% 0%,#263e49,#172939 54%); border:1px solid #ffffff1a; border-radius:24px; overflow:hidden; }
+    .q-top { padding:27px 30px 0; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .q-type { font-size:10px; color:#efb39a; background:#51403e; padding:7px 11px; border-radius:99px; font-weight:760; letter-spacing:.5px; }
+    .q-score { font-size:12px; color:#9fbbbe; }
+    .q-main { min-height:226px; padding:32px 20px 28px; display:flex; justify-content:center; align-items:center; flex-direction:column; text-align:center; }
+    .q-prefix { color:#88a9b5; font-size:11px; letter-spacing:2px; }
+    .q-word { margin:10px 0 5px; font-size:clamp(39px,7vw,76px); font-family:"Noto Sans JP","Yu Gothic",Meiryo,sans-serif; line-height:1.35; font-weight:620; overflow-wrap:anywhere; max-width:100%; }
+    .q-sub { color:var(--muted); font-size:12px; }
+    .answer-area { padding:0 25px 25px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .answer { min-height:80px; display:flex; align-items:center; gap:13px; text-align:left; border-radius:13px; border:1px solid #385060; background:#1a3040; color:var(--text); padding:14px; transition:.16s; }
+    .answer:hover:not(:disabled) { background:#284457; border-color:#b3b4af; }
+    .answer .letter { width:31px; height:31px; flex:none; border-radius:9px; display:grid; place-items:center; background:#2b4557; color:#bacdd4; font-size:12px; font-weight:810; }
+    .answer .answer-text { font-size:clamp(12px,1.4vw,15px); font-weight:680; white-space:normal; overflow-wrap:anywhere; }
+    .answer:disabled { opacity:1; }
+    .answer.is-correct { background:#1c4b43; border-color:#69c8a9; }
+    .answer.is-correct .letter { background:#317d66; color:#eafff4; }
+    .answer.is-wrong { background:#54373d; border-color:#ed9a99; }
+    .answer.is-wrong .letter { background:#99555c; color:white; }
+    .answer.dimmed { opacity:.55; }
+    .feedback { border-top:1px solid #ffffff1a; padding:20px 25px; display:flex; justify-content:space-between; gap:18px; align-items:center; background:#0c1f2b8c; }
+    .feedback strong { font-size:14px; }
+    .feedback p { font-size:11px; color:#a8c0c5; margin:6px 0 0; overflow-wrap:anywhere; }
+    .feedback.good strong { color:#91e0c2; }
+    .feedback.bad strong { color:#ffc3bd; }
+    .quiz-tip { text-align:center; font-size:11px; color:#657f8d; margin-top:15px; }
+    .result-head { text-align:center; padding:24px 0 12px; }
+    .result-ring { --percent:0; margin:0 auto 17px; width:148px; height:148px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(var(--mint) calc(var(--percent) * 1%),#2c3d4d 0); }
+    .result-ring:before { content:""; grid-area:1/1; width:123px; height:123px; background:var(--surface); border-radius:50%; }
+    .result-ring .value { grid-area:1/1; z-index:1; font-size:34px; font-weight:830; }
+    .result-head p { color:var(--muted); font-size:13px; }
+    .result-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:11px; margin:20px 0 25px; }
+    .wrong-row { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr); gap:14px; padding:14px; border-bottom:1px solid var(--line); align-items:center; font-size:12px; }
+    .wrong-row:last-child { border-bottom:0; }
+    .wrong-row .label-small { display:block; color:#839dad; font-size:10px; margin-bottom:3px; }
+    .wrong-row strong { overflow-wrap:anywhere; }
+    .wrong-row .badtext { color:#ffa8a4; }
+    .wrong-row .goodtext { color:#9ce4ca; }
+    .library-layout { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr); align-items:start; gap:16px; }
+    .upload-zone { border:1.5px dashed #657c80; background:linear-gradient(145deg,#1a3440,#172c3a); text-align:center; padding:30px 20px; border-radius:16px; cursor:pointer; transition:.2s; }
+    .upload-zone:hover,.upload-zone.dragging { border-color:#f1b49a; background:#263b44; }
+    .upload-zone .upload-icon { margin:0 auto 12px; width:50px; height:50px; border-radius:16px; background:#314c54; display:grid; place-items:center; color:var(--mint); }
+    .upload-zone .upload-icon svg { width:23px; height:23px; }
+    .upload-zone strong { font-size:13px; }
+    .upload-zone p { color:var(--muted); font-size:11px; margin:6px 0 14px; }
+    .upload-zone .ext { color:#759aaa; font-size:10px; margin-top:14px; letter-spacing:1.4px; }
+    .formats { background:#182d3b; border-radius:14px; padding:18px; border:1px solid var(--line); }
+    .formats h3 { font-size:13px; }
+    .formats p { color:var(--muted); font-size:11px; line-height:1.8; }
+    .formats code { color:#f4be9c; background:#31404b; padding:2px 5px; border-radius:4px; font-size:10px; }
+    .format-pre { background:#0d1d28; color:#b6d8cf; border-radius:10px; padding:13px; font-family:Consolas,monospace; white-space:pre-wrap; font-size:11px; overflow:auto; line-height:1.8; border:1px solid var(--line); }
+    .library-list { margin-top:19px; display:grid; gap:10px; }
+    .library-item { border:1px solid var(--line); background:#162a39; border-radius:14px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px; }
+    .library-item-info { min-width:0; }
+    .library-item-info strong { font-size:13px; display:block; overflow-wrap:anywhere; }
+    .library-item-info span { font-size:11px; color:var(--muted); }
+    .library-actions { display:flex; flex-wrap:wrap; justify-content:end; gap:6px; }
+    .paste-details { margin-top:13px; }
+    .paste-details summary { cursor:pointer; font-size:12px; font-weight:720; color:#a3dbcb; padding:8px 0; }
+    .paste-details .field { margin-top:13px; }
+    .paste-actions { display:flex; gap:10px; margin-top:12px; align-items:center; flex-wrap:wrap; }
+    .backup-actions { display:flex; gap:10px; flex-wrap:wrap; }
+    .mistake-list { display:grid; gap:12px; }
+    .mistake-item { border:1px solid var(--line); background:#162a39; border-radius:16px; padding:17px 18px; display:flex; justify-content:space-between; align-items:center; gap:16px; }
+    .mistake-item h3 { font-size:14px; margin:0 0 4px; }
+    .mistake-item p { font-size:11px; color:var(--muted); margin:0; }
+    .pill { border:1px solid #467266; background:#24463e; color:#a9e2d0; border-radius:99px; font-size:10px; padding:4px 9px; }
+    .toast-container { position:fixed; bottom:22px; right:23px; z-index:110; display:grid; gap:9px; max-width:min(390px,calc(100vw - 46px)); }
+    .toast { padding:13px 16px; color:#eef7f3; font-size:12px; background:#285344; border:1px solid #5f9c86; box-shadow:var(--shadow); border-radius:12px; animation:slideIn .2s; overflow-wrap:anywhere; }
+    .toast.error { background:#57383e; border-color:#aa7477; }
+    @keyframes slideIn { from { transform:translateY(8px);opacity:0; } to { transform:translateY(0);opacity:1; } }
+    .modal-overlay { position:fixed; inset:0; background:#010b13c9; z-index:90; display:grid; place-items:center; padding:20px; backdrop-filter:blur(4px); }
+    .modal { width:min(710px,100%); background:#142638; border:1px solid #466174; border-radius:21px; box-shadow:0 27px 90px #0009; padding:24px; max-height:92vh; overflow-y:auto; }
+    .modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:15px; margin-bottom:18px; }
+    .modal-head p { color:var(--muted); font-size:11px; margin:3px 0 0; }
+    .modal .field + .field { margin-top:16px; }
+    .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:19px; flex-wrap:wrap; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:12px; margin-top:12px; }
+    table { border-collapse:collapse; width:100%; font-size:12px; }
+    th,td { text-align:left; padding:11px 13px; border-bottom:1px solid var(--line); min-width:110px; overflow-wrap:anywhere; }
+    th { color:#a5bbb9; background:#243a48; font-size:11px; }
+    tr:last-child td { border-bottom:0; }
+    .hide { display:none!important; }
+    .divider-line { height:1px; background:var(--line); margin:21px 0; }
+    .mini-annotation { margin-top:14px; font-size:11px; color:var(--muted); }
+    .checkline { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; cursor:pointer; }
+    .checkline input { accent-color:var(--accent); }
+    @media(max-width:1100px) { .lesson-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .library-layout { grid-template-columns:1fr; } .hero { grid-template-columns:1fr 190px; } .hero-sun { width:165px; height:165px; font-size:95px; } }
+    @media(max-width:760px) { .app { grid-template-columns:1fr; padding-bottom:66px; } .sidebar { height:auto; position:fixed; bottom:0; top:auto; left:0; right:0; z-index:30; padding:8px 12px max(8px,env(safe-area-inset-bottom)); background:#0c1824f2; backdrop-filter:blur(16px); border-right:0; border-top:1px solid var(--line); } .sidebar>.brand,.side-label,.side-bottom,.side-foot { display:none; } .nav { grid-template-columns:repeat(4,1fr); gap:4px; } .nav-btn { justify-content:center; flex-direction:column; gap:3px; padding:7px 2px; font-size:10px; } .nav-btn svg { width:19px; height:19px; } .topbar { height:60px; padding:0 20px; } .top-tip { display:none; } .content { padding:22px 18px 80px; } .hero { min-height:245px; grid-template-columns:1fr 125px; padding:24px; } .hero-sun { width:112px; height:112px; font-size:69px; } .hero-art { height:140px; } .hero-vertical { display:none; } .stats-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .lesson-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media(max-width:520px) { .hero { grid-template-columns:1fr; } .hero-art { position:absolute; right:-45px; top:-50px; opacity:.21; pointer-events:none; } .hero-sun { width:200px; height:200px; font-size:110px; } .hero h1,.hero .lead,.hero-actions { position:relative; z-index:1; } .lesson-grid,.setup-grid,.mode-grid { grid-template-columns:1fr; } .mode-grid { gap:7px; } .mode-option { min-height:67px; padding:10px 12px; display:grid; grid-template-columns:36px 1fr; align-items:center; gap:0px 12px; } .mode-option .mode-icon { grid-row:span 2; } .mode-option span:last-child { grid-column:2; } .answer-area { grid-template-columns:1fr; padding:0 15px 15px; gap:9px; } .answer { min-height:58px; } .q-main { min-height:186px; } .q-top { padding:20px 16px 0; } .feedback { padding:15px; flex-direction:column; align-items:stretch; gap:13px; } .feedback .btn { width:100%; } .page-heading { align-items:start; flex-direction:column; } .setting-bottom { align-items:stretch; flex-direction:column; } .setting-bottom .field { width:100%; } .panel { padding:18px; } .library-item { align-items:flex-start; flex-direction:column; } .library-actions { justify-content:flex-start; } .mistake-item { align-items:flex-start; flex-direction:column; } .wrong-row { grid-template-columns:1fr 1fr; gap:7px; } .wrong-row>div:first-child { grid-column:1/-1; } }
+    @media(prefers-reduced-motion:reduce) { *,*:before,*:after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
+    .study-controls { margin-top:16px; padding:12px 14px; border-radius:13px; border:1px solid var(--line); display:flex; gap:12px; align-items:center; justify-content:space-between; background:var(--surface); color:var(--muted); font-size:12px; }
+    .quiz-clock-line { display:flex; align-items:center; gap:7px; white-space:nowrap; }
+    .quiz-clock-line svg { width:16px; height:16px; color:var(--accent); }
+    .daily-chart-scroll { overflow-x:auto; }
+    .daily-chart { display:grid; grid-template-columns:repeat(14,minmax(41px,1fr)); gap:8px; min-width:640px; align-items:end; }
+    .daily-chart-item { height:236px; display:flex; flex-direction:column; align-items:center; text-align:center; font-size:10px; color:var(--muted); gap:5px; }
+    .daily-chart-item strong { font-size:11px; color:var(--mint); }
+    .daily-chart-value { white-space:nowrap; font-size:9px; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+    .daily-chart-track { flex:1; width:100%; display:flex; flex-direction:column; justify-content:flex-end; border-radius:8px; background:#183042; overflow:hidden; }
+    .daily-chart-bar { width:100%; border-radius:7px 7px 0 0; background:linear-gradient(180deg,#f2ad8e,#cc826f); }
+    .daily-empty { text-align:center; color:var(--muted); padding:27px; }
+    @media(max-width:760px) { .nav { grid-template-columns:repeat(5,1fr); } .nav-btn { font-size:9px; padding:7px 0; } .study-controls { align-items:stretch; flex-direction:column; } }
+    @media(max-width:520px) { .quiz-status { align-items:flex-start; gap:8px; flex-direction:column; } .study-controls .btn { flex:1; } .chart-panel { padding:15px; } }
+    .sync-indicator { font-size:11px; color:var(--mint); max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sync-indicator.warn { color:var(--accent); }
+    .sync-indicator.error { color:var(--red); }
+    .notice { background:#1b3441; border:1px solid #50717b; border-radius:14px; padding:15px 17px; color:#cfe6e7; font-size:12px; line-height:1.8; margin-bottom:17px; }
+    .notice.warn { background:#382f2d; border-color:#886557; color:#ffdbc7; }
+    .notice.error { background:#3c292f; border-color:#965961; color:#ffd3d7; }
+    .notice strong { color:var(--text); }
+    .toolbar { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+    .lesson-chip.hidden { background:#574035; color:#ffcaad; }
+    .login-form .field + .field { margin-top:13px; }
+    .login-form input { width:100%; }
+    @media(max-width:900px) { .topbar-right { gap:7px; } .sync-indicator { max-width:120px; } }
+    @media(max-width:520px) { .sync-indicator { font-size:10px; max-width:95px; } #auth-control { font-size:10px; padding:7px 9px; min-height:34px; } .avatar { display:none; } .topbar { padding:0 12px; } .breadcrumbs { max-width:38%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-emblem" aria-hidden="true">語</div><div><div class="brand-name">KOTOBA LAB</div><div class="brand-sub">JAPANESE VOCAB</div></div></div>
+    <div><div class="side-label">KHÔNG GIAN HỌC TẬP</div><nav class="nav" aria-label="Điều hướng chính">
+      <button class="nav-btn active" data-nav="home"><span data-icon="home"></span> Tổng quan</button>
+      <button class="nav-btn" data-nav="practice"><span data-icon="book"></span> Luyện tập</button>
+      <button class="nav-btn" data-nav="library"><span data-icon="layers"></span> Kho bài học</button>
+      <button class="nav-btn" data-nav="mistakes"><span data-icon="repeat"></span> Ôn tập lỗi</button>
+      <button class="nav-btn" data-nav="stats"><span data-icon="calendar"></span> Thống kê</button>
+    </nav></div>
+    <div class="side-bottom"><div class="jp">継続は力なり。</div><p>Kiên trì chính là sức mạnh.<br>Học một chút mỗi ngày nhé!</p></div>
+    <div class="side-foot">HỌC ONLINE • KOTOBA LAB V3.0</div>
+  </aside>
+  <main class="main"><header class="topbar"><div class="breadcrumbs">KOTOBA LAB <span style="opacity:.45;padding:0 8px">/</span> <b id="breadcrumb">Tổng quan</b></div><div class="topbar-right"><span class="top-tip">日本語を勉強しましょう</span><span id="sync-indicator" class="sync-indicator">Đang kết nối…</span><button class="btn ghost small" id="auth-control" data-action="openLogin">Đăng nhập admin</button><div class="avatar" aria-label="Học tiếng Nhật">あ</div></div></header><div id="content" class="content"></div></main>
+</div>
+<div id="modal-root"></div><div id="toast-root" class="toast-container" aria-live="polite"></div>
+<input type="file" id="file-picker" class="hide" accept=".csv,.tsv,.txt,.json,.xlsx" multiple>
+<input type="file" id="backup-picker" class="hide" accept=".json">
+<script src="config.js"></script>
+<script>
+(() => {
+  'use strict';
+  const STORAGE = 'kotoba_lab_data_v1';
+  const PROGRESS_KEY = 'kotoba_lab_progress_v2';
+  const CACHE_KEY = 'kotoba_public_lessons_v2';
+  const SESSION_KEY = 'kotoba_admin_session_v2';
+  // Giữ nguyên khóa dữ liệu V2 để người dùng nâng cấp không mất tiến độ.
+  const CONFIG = window.KOTOBA_CONFIG || {};
+  const SUPA_URL = String(CONFIG.SUPABASE_URL||'').trim().replace(/\/$/, '');
+  const SUPA_KEY = String(CONFIG.SUPABASE_ANON_KEY||'').trim();
+  const CLOUD_ENABLED = /^https:\/\//i.test(SUPA_URL) && !/YOUR_PROJECT|YOUR_SUPABASE|REPLACE_ME/i.test(SUPA_URL+' '+SUPA_KEY) && SUPA_KEY.length>16;
+
+  const MODE = {
+    hira_vi:   { label:'Hiragana → Tiếng Việt', short:'Hira → Việt', source:'hira', answer:'vi', icon:'あ', instruction:'Chọn nghĩa tiếng Việt đúng' },
+    kanji_hira:{ label:'Hán tự → Hiragana', short:'Kanji → Hira', source:'kanji', answer:'hira', icon:'漢', instruction:'Chọn cách đọc Hiragana đúng' },
+    kanji_vi:  { label:'Hán tự → Tiếng Việt', short:'Kanji → Việt', source:'kanji', answer:'vi', icon:'語', instruction:'Chọn nghĩa tiếng Việt đúng' }
+  };
+  const ICONS = {
+    home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
+    book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+    layers:'<path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/>',
+    repeat:'<path d="m17 2 4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/>',
+    arrow:'<path d="M5 12h14m-6-6 6 6-6 6"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    upload:'<path d="M12 16V3m-5 5 5-5 5 5"/><path d="M3 16v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/>',
+    check:'<path d="m20 6-11 11-5-5"/>',
+    close:'<path d="M18 6 6 18M6 6l12 12"/>',
+    chart:'<path d="M3 3v18h18M8 17v-5m5 5V7m5 10v-9"/>',
+    flame:'<path d="M12 22c4 0 7-3 7-7 0-3-2-5-3-6-.5 3-3 3-3 3 1-4-2-7-4-9 0 4-1 6-3 9-2 4 0 10 6 10Z"/>',
+    target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+    file:'<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7M8 15h8M8 18h6"/>',
+    edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L9 17l-4 1 1-4 10.5-10.5Z"/>',
+    trash:'<path d="M3 6h18M8 6V4h8v2m3 0-1 15H6L5 6m5 4v7m4-7v7"/>',
+    download:'<path d="M12 3v12m-5-5 5 5 5-5M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>',
+    spark:'<path d="m12 3 1.9 6.1L20 11l-6.1 1.9L12 19l-1.9-6.1L4 11l6.1-1.9L12 3ZM19 18l.7 1.3L21 20l-1.3.7L19 22l-.7-1.3L17 20l1.3-.7L19 18Z"/>',
+    back:'<path d="m15 18-6-6 6-6"/>',
+    rotate:'<path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/>',
+    menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/>',
+    pause:'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',
+    play:'<path d="m8 5 11 7-11 7V5Z"/>',
+    trends:'<path d="M3 18h18M6 15l5-5 4 3 5-7"/>' 
+  };
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const icon = name => '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICONS[name]||ICONS.file)+'</svg>';
+  const id = () => (globalThis.crypto?.randomUUID?.() || ('k'+Date.now().toString(36)+Math.random().toString(36).slice(2)));
+  const standard = s => String(s??'').trim().normalize('NFKC').toLowerCase();
+  const fmtDate = d => { try { return new Date(d).toLocaleDateString('vi-VN'); } catch { return ''; } };
+  const DEFAULT = [
+    ['日本','にほん','Nhật Bản'],['学校','がっこう','Trường học'],['先生','せんせい','Giáo viên'],
+    ['学生','がくせい','Học sinh'],['友達','ともだち','Bạn bè'],['家族','かぞく','Gia đình'],
+    ['水','みず','Nước'],['本','ほん','Sách'],['電車','でんしゃ','Tàu điện'],
+    ['時間','じかん','Thời gian'],['猫','ねこ','Con mèo'],['花','はな','Hoa']
+  ];
+  const makeWords = arr => arr.map(x=>({id:id(),kanji:String(x.kanji??'').trim(),hira:String(x.hira??'').trim(),vi:String(x.vi??'').trim()}));
+  const starter = () => ({activity:{},lessons:[{id:id(),name:'N5 • Từ vựng cơ bản',isDemo:true,createdAt:new Date().toISOString(),words:makeWords(DEFAULT.map(([kanji,hira,vi])=>({kanji,hira,vi})))}],mistakes:{},stats:{total:0,correct:0,streak:0,bestStreak:0,history:[]},preferences:{mode:'hira_vi',count:'all'},activeLessonId:null});
+  function load() { try { const raw=localStorage.getItem(STORAGE); if(!raw) return starter(); const data=JSON.parse(raw); if (!data || !Array.isArray(data.lessons)) throw Error('bad'); return {activity:data.activity&&typeof data.activity==='object'&&!Array.isArray(data.activity)?data.activity:{},lessons:data.lessons, mistakes:data.mistakes&&typeof data.mistakes==='object'?data.mistakes:{},stats:{total:0,correct:0,streak:0,bestStreak:0,history:[],...(data.stats||{})},preferences:{mode:'hira_vi',count:'all',...(data.preferences||{})},activeLessonId:data.activeLessonId||null}; } catch(e) { console.warn('Cannot load saved data',e); return starter(); } }
+  let data = load();
+  function sanitizeActivity(raw){
+    const output={};
+    if(!raw || typeof raw!=='object' || Array.isArray(raw))return output;
+    for(const [date,v] of Object.entries(raw).slice(-3660)){
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!v||typeof v!=='object')continue;
+      const number=x=>Number.isFinite(Number(x))?Math.max(0,Math.floor(Number(x))):0;
+      const unique=arr=>Array.isArray(arr)?[...new Set(arr.filter(x=>typeof x==='string').slice(0,20000))]:[];
+      output[date]={durationMs:number(v.durationMs),answered:number(v.answered),correct:number(v.correct),sessions:number(v.sessions),wordIds:unique(v.wordIds),correctWordIds:unique(v.correctWordIds)};
+    }
+    return output;
+  }
+  data.activity=sanitizeActivity(data.activity);
+  const dayKey=(time=Date.now())=>{const d=new Date(time);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+  const emptyDay=()=>({durationMs:0,answered:0,correct:0,sessions:0,wordIds:[],correctWordIds:[]});
+  const dayRow=date=>data.activity[date]||(data.activity[date]=emptyDay());
+  const readDay=date=>data.activity[date]||emptyDay();
+  const displayTime=ms=>{const s=Math.floor(Math.max(0,Number(ms)||0)/1000);return s<60?s+' giây':s<3600?Math.floor(s/60)+'p '+(s%60)+'s':Math.floor(s/3600)+'g '+Math.floor(s%3600/60)+'p';};
+  const displayDate=date=>{const [y,m,d]=date.split('-');return d+'/'+m+'/'+y;};
+  function pastDay(n){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-n);return dayKey(d.getTime());}
+  let studyLastAt=Date.now(),studyLastSaveAt=Date.now();
+  const IDLE_LIMIT_MS=5*60*1000;
+  function addStudyDuration(start,end){
+    while(start<end){
+      const d=new Date(start),next=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1).getTime();
+      const until=Math.min(end,next);
+      dayRow(dayKey(start)).durationMs+=until-start;
+      start=until;
+    }
+  }
+  function updateLiveClock(){
+    const el=$('#live-clock');if(el&&quiz)el.textContent=displayTime(quiz.durationMs||0);
+    const today=$('#live-today');if(today)today.textContent=displayTime(readDay(dayKey()).durationMs);
+  }
+  function flushStudyClock(includeHide=false){
+    const now=Date.now();
+    if(quiz&&!quiz.done&&view==='practice'&&!quiz.paused&&(document.visibilityState==='visible'||includeHide)){
+      const limit=Number(quiz.lastActionAt||now)+IDLE_LIMIT_MS;
+      const end=Math.min(now,limit);
+      const duration=Math.max(0,Math.min(15000,end-studyLastAt));
+      if(duration){addStudyDuration(end-duration,end);quiz.durationMs=(quiz.durationMs||0)+duration;}
+      if(now>=limit){quiz.paused=true;toast('Đồng hồ đã tạm dừng vì không có thao tác trong 5 phút.');render();}
+    }
+    studyLastAt=now;
+    if(now-studyLastSaveAt>=5000){studyLastSaveAt=now;save();}
+    updateLiveClock();
+  }
+  function recordDailyAnswer(lessonId,wordId,correct){
+    const row=dayRow(dayKey()),key=lessonId+'::'+wordId;
+    row.answered++;
+    if(correct)row.correct++;
+    if(!row.wordIds.includes(key))row.wordIds.push(key);
+    if(correct&&!row.correctWordIds.includes(key))row.correctWordIds.push(key);
+  }
+  function exportDailyCsv(){
+    flushStudyClock();
+    const rows=[['Ngày','Thời gian học (giây)','Số từ khác nhau','Số từ trả lời đúng','Lượt trả lời','Lượt đúng','Buổi hoàn thành']];
+    for(const date of Object.keys(data.activity).sort().reverse()){
+      const d=readDay(date);
+      rows.push([date,(d.durationMs/1000).toFixed(1),d.wordIds.length,d.correctWordIds.length,d.answered,d.correct,d.sessions]);
+    }
+    download('\uFEFF'+csvText(rows),'kotoba_thong_ke_theo_ngay_'+dayKey()+'.csv','text/csv;charset=utf-8');
+    toast('Đã xuất thống kê theo ngày.');
+  }
+  // Chỉ lấy tiến độ cá nhân từ bộ nhớ máy. Đề chung luôn được tải từ Supabase.
+  if (CLOUD_ENABLED) {
+    try {
+      const saved=JSON.parse(localStorage.getItem(PROGRESS_KEY)||'null');
+      if(saved) {
+        data.stats={...data.stats,...(saved.stats||{})};
+        data.mistakes=saved.mistakes&&typeof saved.mistakes==='object'?saved.mistakes:{};
+        data.preferences={...data.preferences,...(saved.preferences||{})};
+        data.activeLessonId=saved.activeLessonId||null;
+        data.activity=sanitizeActivity(saved.activity);
+      }
+      const cache=JSON.parse(localStorage.getItem(CACHE_KEY)||'[]');
+      data.lessons=Array.isArray(cache)?cache.filter(l=>l&&l.published!==false&&Array.isArray(l.words)):[];
+    } catch {data.lessons=[];}
+  }
+  let view = 'home'; let quiz = null; let activeModal = null;
+  let adminSession=null, isAdmin=false, refreshPromise=null, requestVersion=0;
+  let cloudBusy=false, cloudError='', cloudSyncedAt=0, cloudLoading=CLOUD_ENABLED;
+  try {
+    const sess=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
+    if(sess&&sess.access_token&&sess.refresh_token&&sess.user?.id)adminSession=sess;
+  } catch {localStorage.removeItem(SESSION_KEY);}
+  function save() {
+    try {
+      if(CLOUD_ENABLED) localStorage.setItem(PROGRESS_KEY,JSON.stringify({stats:data.stats,mistakes:data.mistakes,preferences:data.preferences,activeLessonId:data.activeLessonId,activity:data.activity}));
+      else localStorage.setItem(STORAGE,JSON.stringify(data));
+      return true;
+    } catch(e) {toast('Không thể lưu tiến độ trong trình duyệt. Hãy kiểm tra dung lượng lưu trữ.','error');return false;}
+  }
+  if (!data.activeLessonId && data.lessons.length) {data.activeLessonId=data.lessons[0].id; save();}
+
+  function persistSession(){
+    try {if(adminSession)localStorage.setItem(SESSION_KEY,JSON.stringify(adminSession));else localStorage.removeItem(SESSION_KEY);}catch(e){console.warn('Không thể lưu phiên đăng nhập',e);}
+  }
+  function apiHeaders(token=null){
+    const h={'apikey':SUPA_KEY,'Accept':'application/json'};
+    if(token)h.Authorization='Bearer '+token;
+    return h;
+  }
+  async function parseApiResponse(res){
+    const raw=await res.text();let json=null;
+    try {json=raw?JSON.parse(raw):null;} catch { /* Response may be empty/non-JSON */ }
+    if(!res.ok)throw Error(json?.msg||json?.message||json?.error_description||json?.error||('Lỗi kết nối Supabase HTTP '+res.status));
+    return json;
+  }
+  async function refreshAuth(force=false){
+    if(!adminSession?.refresh_token) return;
+    if(!force && adminSession.expires_at*1000>Date.now()+90_000) return;
+    if(refreshPromise)return refreshPromise;
+    refreshPromise=(async()=>{
+      try {
+        const res=await fetch(SUPA_URL+'/auth/v1/token?grant_type=refresh_token',{
+          method:'POST',headers:{...apiHeaders(),'Content-Type':'application/json'},
+          body:JSON.stringify({refresh_token:adminSession.refresh_token})
+        });
+        const result=await parseApiResponse(res);
+        adminSession={...adminSession,...result,expires_at:Math.floor(Date.now()/1000)+(result.expires_in||3600)};
+        persistSession();
+      }catch(err){
+        adminSession=null;isAdmin=false;persistSession();updateHeader();throw Error('Phiên đăng nhập hết hạn. Hãy đăng nhập lại.');
+      }
+    })();
+    try{await refreshPromise;}finally{refreshPromise=null;}
+  }
+  async function apiFetch(path,{method='GET',body=null,admin=false}={}){
+    if(!CLOUD_ENABLED)throw Error('Chưa cấu hình Supabase trong config.js.');
+    if(admin&&!adminSession)throw Error('Vui lòng đăng nhập tài khoản admin.');
+    if(adminSession)await refreshAuth();
+    const send=()=>fetch(SUPA_URL+path,{
+      method,headers:{...apiHeaders(adminSession?.access_token),...(body!==null?{'Content-Type':'application/json'}:{}),...(method!=='GET'?{'Prefer':'return=representation'}:{})},
+      ...(body!==null?{body:JSON.stringify(body)}:{}),cache:'no-store'
+    });
+    let res=await send();
+    if(res.status===401&&adminSession?.refresh_token){await refreshAuth(true);res=await send();}
+    return parseApiResponse(res);
+  }
+  function cloudLesson(row){
+    return {id:String(row.id),name:String(row.title||''),words:Array.isArray(row.words)?row.words.map((w,i)=>({
+      id:String(w.id||'w'+i),kanji:String(w.kanji||''),hira:String(w.hira||''),vi:String(w.vi||'')
+    })):[],published:row.published!==false,isDemo:false,createdAt:row.created_at||new Date().toISOString(),updatedAt:row.updated_at};
+  }
+  function updateHeader(){
+    const status=$('#sync-indicator'),auth=$('#auth-control');if(!status||!auth)return;
+    const state=!CLOUD_ENABLED?'Chưa kết nối cloud':cloudError?'Mất kết nối':cloudLoading?'Đang đồng bộ…':isAdmin?'Admin · Cloud':'Đã kết nối';
+    status.textContent=state;status.title=cloudError||state;
+    status.className='sync-indicator'+(!CLOUD_ENABLED?' warn':cloudError?' error':'');
+    auth.textContent=isAdmin?'Đăng xuất':'Đăng nhập admin';
+    auth.dataset.action=isAdmin?'logout':'openLogin';
+    auth.title=isAdmin?(adminSession?.user?.email||'Tài khoản admin'):'Đăng nhập tài khoản quản trị';
+  }
+  async function syncLessons({silent=false}={}){
+    if(!CLOUD_ENABLED)return;
+    const version=++requestVersion;
+    if(!silent){cloudLoading=true;updateHeader();}
+    try {
+      const result=await apiFetch('/rest/v1/kotoba_lessons?select=id,title,words,published,created_at,updated_at&order=created_at.desc&limit=500');
+      if(version!==requestVersion)return;
+      if(!Array.isArray(result))throw Error('Dữ liệu bài học không hợp lệ.');
+      data.lessons=result.map(cloudLesson);
+      const publicLessons=data.lessons.filter(l=>l.published);
+      try{localStorage.setItem(CACHE_KEY,JSON.stringify(publicLessons));}catch{ /* Offline cache is optional */ }
+      if(!data.lessons.some(l=>l.id===data.activeLessonId))data.activeLessonId=data.lessons[0]?.id||null;
+      save();cloudError='';cloudSyncedAt=Date.now();
+      if(!quiz&&!activeModal)render();
+    } catch(err) {
+      if(version!==requestVersion)return;
+      const before=cloudError;cloudError=err.message;
+      if(!silent||!before)toast('Không tải được kho bài: '+err.message,'error');
+      if(!quiz&&!activeModal)render();
+    } finally {
+      if(version===requestVersion){cloudLoading=false;updateHeader();}
+    }
+  }
+  async function checkAdmin(){
+    if(!CLOUD_ENABLED||!adminSession)return false;
+    try {
+      await refreshAuth();
+      const rows=await apiFetch('/rest/v1/kotoba_admins?select=user_id&user_id=eq.'+encodeURIComponent(adminSession.user.id));
+      isAdmin=Array.isArray(rows)&&rows.some(x=>x.user_id===adminSession.user.id);
+    }catch(e){isAdmin=false;console.warn('Không xác minh được quyền admin:',e.message);}
+    updateHeader();return isAdmin;
+  }
+  async function signIn(){
+    if(cloudBusy)return;
+    const email=$('#login-email')?.value.trim(),password=$('#login-password')?.value;
+    if(!email||!password)return toast('Nhập email và mật khẩu admin.','error');
+    cloudBusy=true;
+    const btn=$('[data-action="loginSubmit"]');if(btn)btn.disabled=true;
+    try {
+      const res=await fetch(SUPA_URL+'/auth/v1/token?grant_type=password',{
+        method:'POST',headers:{...apiHeaders(),'Content-Type':'application/json'},body:JSON.stringify({email,password})
+      });
+      const result=await parseApiResponse(res);
+      adminSession={...result,expires_at:Math.floor(Date.now()/1000)+(result.expires_in||3600)};
+      if(!adminSession.user?.id||!adminSession.refresh_token)throw Error('Supabase không trả về phiên đăng nhập hợp lệ.');
+      persistSession();
+      if(!await checkAdmin())throw Error('Tài khoản này chưa được cấp quyền admin trong bảng kotoba_admins.');
+      closeModal();toast('Đã đăng nhập admin.');await syncLessons();
+    }catch(err){adminSession=null;isAdmin=false;persistSession();updateHeader();toast('Đăng nhập thất bại: '+err.message,'error');}
+    finally{cloudBusy=false;const b=$('[data-action="loginSubmit"]');if(b)b.disabled=false;}
+  }
+  async function signOut(){
+    // Không để lộ bài nháp của admin trong cache công cộng sau đăng xuất.
+    const token=adminSession?.access_token;
+    adminSession=null;isAdmin=false;persistSession();requestVersion++;
+    data.lessons=data.lessons.filter(l=>l.published);
+    updateHeader();closeModal();render();
+    if(token)fetch(SUPA_URL+'/auth/v1/logout',{method:'POST',headers:apiHeaders(token)}).catch(()=>{});
+    await syncLessons({silent:true});toast('Đã đăng xuất admin.');
+  }
+  async function cloudCreateLesson(name,words){
+    if(!isAdmin)throw Error('Chỉ admin được đăng bài.');
+    const result=await apiFetch('/rest/v1/kotoba_lessons',{method:'POST',admin:true,body:{title:uniqueName(name),words:makeWords(words),published:true}});
+    if(!Array.isArray(result)||!result[0])throw Error('Đăng bài thành công nhưng không nhận được dữ liệu trả về.');
+    return cloudLesson(result[0]);
+  }
+  async function cloudUpdateLesson(lesson,changes){
+    if(!isAdmin)throw Error('Chỉ admin được sửa bài.');
+    const result=await apiFetch('/rest/v1/kotoba_lessons?id=eq.'+encodeURIComponent(lesson.id),{method:'PATCH',admin:true,body:changes});
+    if(!Array.isArray(result)||!result.length)throw Error('Không tìm thấy bài để cập nhật.');
+    return cloudLesson(result[0]);
+  }
+  async function cloudDeleteLesson(lesson){
+    if(!isAdmin)throw Error('Chỉ admin được xóa bài.');
+    const result=await apiFetch('/rest/v1/kotoba_lessons?id=eq.'+encodeURIComponent(lesson.id),{method:'DELETE',admin:true});
+    if(!Array.isArray(result)||!result.length)throw Error('Bài học không còn tồn tại.');
+  }
+  function openLogin(){
+    if(!CLOUD_ENABLED)return toast('Hãy điền Supabase URL và publishable key trong config.js trước.','error');
+    openModal('Đăng nhập quản trị',`<div class="login-form"><p class="lead">Người học không cần tài khoản. Chỉ quản trị viên mới đăng nhập để đăng, sửa hoặc ẩn bài học.</p><div class="field"><label for="login-email">Email admin</label><input id="login-email" type="email" autocomplete="username" placeholder="admin@example.com"></div><div class="field"><label for="login-password">Mật khẩu</label><input id="login-password" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu"></div><div class="modal-actions">${button('Hủy','closeModal','ghost')}${button('Đăng nhập','loginSubmit')}</div></div>`,'Xác thực bằng Supabase Auth');
+  }
+  function toast(message,kind='ok') { const el=document.createElement('div'); el.className='toast'+(kind==='error'?' error':''); el.textContent=message; $('#toast-root').append(el); setTimeout(()=>el.remove(),4500); }
+  const getLesson = (lessonId=data.activeLessonId) => data.lessons.find(l=>l.id===lessonId);
+  const allMistakes = () => Object.entries(data.mistakes).flatMap(([lessonId,recs])=>Object.entries(recs||{}).map(([key,record])=>({lessonId,key,...record})));
+  function eligibleWords(lesson,mode) { const m=MODE[mode]; if(!lesson||!m) return []; const words=lesson.words.filter(w=>String(w[m.source]||'').trim()&&String(w[m.answer]||'').trim()); const answers = new Set(words.map(w=>standard(w[m.answer]))); return answers.size>=4 ? words : []; }
+  function modesSummary(lesson) {return Object.keys(MODE).filter(m=>eligibleWords(lesson,m).length).length;}
+  function shuffle(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+  const navTitle = {home:'Tổng quan',practice:'Luyện tập',library:'Kho bài học',mistakes:'Ôn tập lỗi',stats:'Thống kê học tập'};
+  function setView(next) { const leavingQuiz=!!quiz&&view==='practice'&&next!=='practice';flushStudyClock();if(leavingQuiz)save();view=next; if(next!=='practice')quiz=null; closeModal(); render(); window.scrollTo({top:0,behavior:'instant'}); }
+  function render() { $('#breadcrumb').textContent=navTitle[view]; document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===view)); $('#content').innerHTML=({home:renderHome,practice:renderPractice,library:renderLibrary,mistakes:renderMistakes,stats:renderStats}[view]||renderHome)(); updateHeader(); }
+  const button=(caption,action,variant='primary',extra='')=>`<button class="btn ${variant}" ${extra} data-action="${action}">${caption}</button>`;
+  function lessonCard(l) { const viable=modesSummary(l),wrongCount=Object.keys(data.mistakes[l.id]||{}).length; return `<article class="lesson-card">
+    <div class="lesson-card-top"><span class="lesson-chip ${l.published===false?'hidden':l.isDemo?'demo':''}">${l.published===false?'BÀI ĐANG ẨN':l.isDemo?'BÀI MẪU':CLOUD_ENABLED?'BÀI CÔNG KHAI':'BÀI TRÊN MÁY'}</span><span class="lesson-art">${esc(l.words[0]?.kanji||'あ')}</span></div>
+    <h3>${esc(l.name)}</h3><div class="lesson-meta">${l.words.length} từ vựng · ${viable}/3 kiểu luyện${wrongCount?' · '+wrongCount+' cần ôn':''}</div>
+    <div class="lesson-bottom">${button(icon('arrow')+' Học ngay','learn','primary small',`data-id="${esc(l.id)}" ${viable?'':'disabled'}`)}${(!CLOUD_ENABLED||isAdmin)?`<button class="btn ghost small" data-action="editLesson" data-id="${esc(l.id)}">${icon('edit')} Sửa bài</button>`:button('Xem từ','inspectLesson','ghost small',`data-id="${esc(l.id)}"`)}</div></article>`; }
+  function renderHome() { const nWords=data.lessons.reduce((sum,l)=>sum+l.words.length,0);const s=data.stats;const accuracy=s.total?Math.round(s.correct/s.total*100):0;const pending=allMistakes().length;const today=readDay(dayKey());
+    return `<section class="hero"><div><div class="eyebrow">ようこそ • WELCOME BACK</div><h1>Tiếng Nhật dễ hơn,<br>khi học đúng cách.</h1><p class="lead">Luyện trắc nghiệm 3 chế độ từ kho bài học chung. Admin đăng một lần, mọi người đều được học.</p><div class="hero-actions">${button(icon('spark')+' Bắt đầu luyện tập','toPractice')}${button(icon('layers')+' Xem kho bài','toLibrary','secondary')}</div></div><div class="hero-art" aria-hidden="true"><div class="hero-sun">学</div><div class="hero-vertical">日本語を楽しく学ぶ</div><div class="hero-decor"></div></div></section>
+    <div class="section-head"><div><h2>Hôm nay · ${displayDate(dayKey())}</h2><p>Ghi nhận khi bạn luyện trắc nghiệm trên thiết bị này.</p></div>${button(icon('calendar')+' Xem lịch sử','toStats','ghost small')}</div>
+    <div class="stats-grid" style="margin-top:0">${stat('Thời gian học',displayTime(today.durationMs),'clock','Chỉ tính khi đang luyện')}${stat('Từ đã luyện',today.wordIds.length,'book','Không tính từ trùng')}${stat('Lượt trả lời',today.answered,'target',today.correct+' lượt đúng')}${stat('Buổi hoàn thành',today.sessions,'check','Tổng của riêng hôm nay')}</div>
+    <div class="section-head"><div><h2>Tiến độ tổng thể</h2><p>Từ tất cả các buổi học của bạn.</p></div></div>
+    <div class="stats-grid" style="margin-top:0">${stat('Tổng số từ',nWords,'file','Trong '+data.lessons.length+' bài học')}${stat('Câu đã làm',s.total,'book','Tổng lượt trả lời')}${stat('Độ chính xác',accuracy+'%','target','Tính trên tất cả câu')}${stat('Cần ôn lại',pending,'repeat','Các từ trả lời sai')}</div>
+    <div class="section-head"><div><h2>${CLOUD_ENABLED?'Bài học trên hệ thống':'Bài học trên máy'}</h2><p>Chọn một bài để bắt đầu ngay.</p></div>${(isAdmin||!CLOUD_ENABLED)?button(icon('plus')+' Thêm bài','toLibrary','ghost small'):button(icon('layers')+' Tất cả bài','toLibrary','ghost small')}</div>
+    <div class="lesson-grid">${data.lessons.length?data.lessons.slice(0,6).map(lessonCard).join(''):`<div class="empty-card"><div class="big">語</div><h3>Chưa có bài học</h3><p>${CLOUD_ENABLED?'Admin chưa đăng bài nào hoặc dữ liệu chưa tải được.':'Tải file từ vựng lên để bắt đầu.'}</p>${button('Mở kho bài','toLibrary')}</div>`}</div>`; }
+  function stat(name,val,ico,foot) {return `<div class="stat-card"><div class="stat-top">${esc(name)}<div class="stat-icon">${icon(ico)}</div></div><div class="stat-value">${esc(val)}</div><div class="stat-foot">${esc(foot)}</div></div>`;}
+  function renderPractice() {if(quiz) return quiz.done?renderResult():renderQuestion();
+    const l=getLesson();const lessonOptions=data.lessons.map(x=>`<option value="${esc(x.id)}" ${l?.id===x.id?'selected':''}>${esc(x.name)} (${x.words.length} từ)</option>`).join('');
+    const mode = MODE[data.preferences.mode] ? data.preferences.mode : 'hira_vi';
+    return `<section class="page-heading"><div><div class="eyebrow">PRACTICE MODE</div><h1>Khởi động buổi học</h1><p>Chọn bài và hình thức trắc nghiệm bạn muốn luyện.</p></div></section>
+      ${!data.lessons.length?`<div class="empty-card"><div class="big">本</div><h3>Chưa có bài học nào</h3><p>Hãy tải bài học lên để tạo câu hỏi.</p>${button('Tải bài học lên','toLibrary')}</div>`:
+      `<div class="panel"><div class="panel-heading"><div><h2>Cấu hình bài luyện</h2><p class="lead">Các đáp án nhiễu được lấy từ chính bài học đã chọn.</p></div></div>
+      <div class="field"><label for="practice-lesson">Bài học</label><select id="practice-lesson">${lessonOptions}</select></div>
+      <div class="section-head"><div><h3>Chọn kiểu câu hỏi</h3><p>3 chế độ luyện tập</p></div></div>
+      <div class="mode-grid">${Object.entries(MODE).map(([key,m])=>{const num=eligibleWords(l,key).length;return `<button class="mode-option ${mode===key?'selected':''}" data-action="selectMode" data-mode="${key}" ${num?'':'disabled title="Cần ít nhất 4 đáp án khác nhau trong bài"'}><span class="mode-icon">${m.icon}</span><strong>${m.label}</strong><span>${num?num+' câu có thể tạo':'Thiếu từ hoặc đáp án'}</span></button>`;}).join('')}</div>
+      <div class="divider-line"></div><div class="setting-bottom"><div class="field"><label for="question-count">Số câu luyện</label><select id="question-count">${[['all','Tất cả'],['10','10 câu'],['20','20 câu'],['30','30 câu']].map(([v,t])=>`<option value="${v}" ${String(data.preferences.count)===v?'selected':''}>${t}</option>`).join('')}</select></div>
+      <button class="btn primary" data-action="startPractice" ${eligibleWords(l,mode).length?'':'disabled'}>${icon('arrow')} Bắt đầu ngay</button></div>
+      <p class="helper">Mỗi câu có 1 đáp án đúng + 3 đáp án sai ngẫu nhiên, không trùng nhau. Cần ít nhất 4 đáp án khác nhau trong bài.</p></div>`}`; }
+  function makeQuestion(lesson,mode,word) { const m=MODE[mode];const pool=eligibleWords(lesson,mode);const correct=String(word[m.answer]).trim();const seen=new Set([standard(correct)]);const distractors=[];for(const w of shuffle(pool)){const candidate=String(w[m.answer]).trim(),normalized=standard(candidate);if(!seen.has(normalized)){seen.add(normalized);distractors.push(candidate);}if(distractors.length===3)break;}if(distractors.length<3)throw Error('Không đủ 3 đáp án nhiễu khác nhau trong bài học.');return {word,options:shuffle([correct,...distractors]),correct,selected:null}; }
+  function beginQuiz({lessonId=data.activeLessonId,mode=data.preferences.mode,wordIds=null}={}) {const lesson=getLesson(lessonId);if(!lesson) return toast('Không tìm thấy bài học.','error');let eligible=eligibleWords(lesson,mode);if(wordIds) {const set=new Set(wordIds);eligible=eligible.filter(w=>set.has(w.id));}if(!eligible.length) return toast('Bài này chưa đủ dữ liệu để tạo trắc nghiệm 4 lựa chọn.','error');let words=shuffle(eligible);const count=data.preferences.count;if(!wordIds&&count!=='all')words=words.slice(0,Math.max(1,Math.floor(Number(count)||words.length)));
+    try { flushStudyClock(); quiz={lessonId:lesson.id,mode,questions:words.map(w=>makeQuestion(lesson,mode,w)),index:0,correctCount:0,wrong:[],done:false,locked:false,paused:false,durationMs:0,lastActionAt:Date.now()};studyLastAt=Date.now();data.activeLessonId=lessonId;data.preferences.mode=mode;save();view='practice';render();window.scrollTo({top:0,behavior:'instant'}); }catch(e){toast(e.message,'error');} }
+  function renderQuestion() {const q=quiz.questions[quiz.index],mode=MODE[quiz.mode],answered=q.selected!==null,score=quiz.correctCount;const progress=(quiz.index+(answered?1:0))/quiz.questions.length*100;
+    return `<section class="quiz-shell"><div class="quiz-status"><span>${esc(getLesson(quiz.lessonId)?.name||'Bài luyện')}</span><span class="quiz-clock-line">${icon('clock')} <b id="live-clock">${displayTime(quiz.durationMs||0)}</b> · <b>${quiz.index+1}</b> / ${quiz.questions.length} câu</span></div><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div>
+      <div class="question-panel"><div class="q-top"><span class="q-type">${esc(mode.label)}</span><span class="q-score">${icon('check')} ${score} đúng</span></div><div class="q-main"><div class="q-prefix">${esc(mode.instruction)}</div><div class="q-word" lang="ja">${esc(q.word[mode.source])}</div><div class="q-sub">Chọn một trong 4 phương án dưới đây</div></div>
+      <div class="answer-area">${q.options.map((answer,i)=>{let cls='';if(answered){cls=standard(answer)===standard(q.correct)?'is-correct':i===q.selected?'is-wrong':'dimmed';}return `<button class="answer ${cls}" data-action="answer" data-index="${i}" ${answered||quiz.paused?'disabled':''}><span class="letter">${'ABCD'[i]}</span><span class="answer-text">${esc(answer)}</span></button>`;}).join('')}</div>
+      ${answered?`<div class="feedback ${standard(q.options[q.selected])===standard(q.correct)?'good':'bad'}"><div><strong>${standard(q.options[q.selected])===standard(q.correct)?'Chính xác! よくできました':'Chưa đúng, ghi nhớ nhé!'}</strong><p><b>${esc(q.word.kanji||'—')}</b> · ${esc(q.word.hira||'—')} · ${esc(q.word.vi||'—')}</p></div>${button(quiz.index===quiz.questions.length-1?'Xem kết quả '+icon('arrow'):'Câu tiếp theo '+icon('arrow'),'nextQuestion')}</div>`:''}</div><div class="quiz-tip">Mẹo: nhấn phím 1–4 hoặc A–D để chọn đáp án${answered?', Enter để tiếp tục':''}.</div>
+      <div class="study-controls"><span>${quiz.paused?'Đồng hồ đang tạm dừng':'Đang ghi thời gian học'}</span><div class="toolbar">${button(icon(quiz.paused?'play':'pause')+(quiz.paused?' Tiếp tục':' Tạm dừng'),'toggleStudyPause','secondary small')}${button('Thoát buổi học','exitQuiz','ghost small')}</div></div></section>`; }
+  function chooseAnswer(index) {if(!quiz||quiz.done||quiz.locked||quiz.paused)return;flushStudyClock();quiz.lastActionAt=Date.now();const q=quiz.questions[quiz.index];if(q.selected!==null||index<0||index>3)return;quiz.locked=true;q.selected=index;const correct=standard(q.options[index])===standard(q.correct);const st=data.stats;st.total++;if(correct){st.correct++;st.streak++;st.bestStreak=Math.max(st.bestStreak,st.streak);quiz.correctCount++;}else{st.streak=0;quiz.wrong.push({word:q.word,correct:q.correct,selected:q.options[index]});}
+    const key=q.word.id+'::'+quiz.mode;const bucket=data.mistakes[quiz.lessonId]||(data.mistakes[quiz.lessonId]={});if(correct)delete bucket[key];else{const record=bucket[key]||{wordId:q.word.id,mode:quiz.mode,count:0};record.count++;record.lastAt=new Date().toISOString();bucket[key]=record;}recordDailyAnswer(quiz.lessonId,q.word.id,correct);save();quiz.locked=false;render(); }
+  function nextQuestion() {if(!quiz||quiz.paused)return;flushStudyClock();quiz.lastActionAt=Date.now();const q=quiz.questions[quiz.index];if(q.selected===null)return;if(quiz.index<quiz.questions.length-1)quiz.index++;else{quiz.done=true;dayRow(dayKey()).sessions++;data.stats.history=Array.isArray(data.stats.history)?data.stats.history:[];data.stats.history.unshift({at:new Date().toISOString(),lessonId:quiz.lessonId,mode:quiz.mode,total:quiz.questions.length,correct:quiz.correctCount,durationMs:quiz.durationMs});data.stats.history=data.stats.history.slice(0,30);save();}render();}
+  function renderResult() {const n=quiz.questions.length,percent=Math.round(quiz.correctCount/n*100),wrong=quiz.wrong;return `<div class="quiz-shell"><div class="result-head"><div class="eyebrow">BUỔI HỌC HOÀN THÀNH</div><div class="result-ring" style="--percent:${percent}"><span class="value">${percent}%</span></div><h1>${percent===100?'Xuất sắc!':percent>=75?'Làm tốt lắm!':'Tiếp tục luyện nhé!'}</h1><p>Bạn trả lời đúng <b>${quiz.correctCount}/${n}</b> câu · Sai ${n-quiz.correctCount} câu</p><p>Thời gian học: <b>${displayTime(quiz.durationMs||0)}</b> · <b>${new Set(quiz.questions.map(q=>q.word.id)).size}</b> từ đã luyện</p><div class="result-actions">${button(icon('rotate')+' Luyện lại','redoQuiz')}${wrong.length?button(icon('repeat')+' Ôn '+wrong.length+' câu sai','reviewResultWrong','secondary'):''}${button(icon('back')+' Đổi bài','exitQuiz','ghost')}</div></div>
+    ${wrong.length?`<div class="panel"><h2>Những câu bạn cần ôn</h2><p class="lead">Khi trả lời đúng ở lần luyện sau, từ này sẽ tự rời danh sách cần ôn.</p><div style="margin-top:15px">${wrong.map(x=>`<div class="wrong-row"><div><span class="label-small">TỪ VỰNG</span><strong>${esc(x.word.kanji||'—')} · ${esc(x.word.hira||'—')}</strong></div><div><span class="label-small">BẠN ĐÃ CHỌN</span><strong class="badtext">${esc(x.selected)}</strong></div><div><span class="label-small">ĐÁP ÁN ĐÚNG</span><strong class="goodtext">${esc(x.correct)}</strong></div></div>`).join('')}</div></div>`:`<div class="empty-card"><div class="big">満</div><h3>Không có câu sai nào!</h3><p>Bạn đã hoàn thành trọn vẹn bài luyện này.</p></div>`}</div>`; }
+  function renderLibrary() {
+    const canManage=!CLOUD_ENABLED||isAdmin;
+    const localRaw=(()=>{try{const j=JSON.parse(localStorage.getItem(STORAGE)||'null');return Array.isArray(j?.lessons)?j.lessons.filter(l=>!l.isDemo):[];}catch{return [];}})();
+    const statusInfo=!CLOUD_ENABLED
+      ? `<div class="notice warn"><strong>Chưa bật đồng bộ.</strong> Đây là chế độ xem thử lưu trên máy. Để đăng bài cho mọi người, hãy chạy <code>supabase.sql</code> rồi điền <code>config.js</code> theo README.</div>`
+      : cloudError
+        ? `<div class="notice error"><strong>Đồng bộ gặp lỗi:</strong> ${esc(cloudError)}. Đang hiển thị dữ liệu công khai đã lưu gần nhất (nếu có). ${button('Thử lại','syncNow','ghost small')}</div>`
+        : `<div class="notice"><strong>${isAdmin?'Chế độ quản trị':'Kho bài học chung'}.</strong> ${isAdmin?'Bạn có quyền đăng, sửa, ẩn và xóa bài. Mọi thay đổi được lưu trên Supabase.':'Chỉ admin đăng đề; khách có thể học mà không cần đăng nhập.'} ${cloudSyncedAt?'Cập nhật lúc '+new Date(cloudSyncedAt).toLocaleTimeString('vi-VN')+'.':''}</div>`;
+    const adminPanel=`<div class="library-layout"><div class="panel"><div class="panel-heading"><div><h2>Thêm bài học mới</h2><p class="lead">${CLOUD_ENABLED?'Đăng trực tiếp lên Supabase để tất cả người học thấy đề.':'Chế độ demo: chỉ lưu trên trình duyệt hiện tại.'}</p></div></div><div id="drop-zone" class="upload-zone" tabindex="0" role="button" aria-label="Chọn file từ vựng để tải lên"><div class="upload-icon">${icon('upload')}</div><strong>Kéo thả file vào đây hoặc chọn file</strong><p>Có thể chọn nhiều file, mỗi file tạo thành 1 bài học</p><button type="button" class="btn primary small" data-action="pickFiles">${icon('plus')} Chọn file từ máy</button><div class="ext">.CSV · .XLSX · .JSON · .TXT · .TSV</div></div>
+      <details class="paste-details" id="paste-panel"><summary>Hoặc dán từ vựng để tạo bài nhanh</summary><div class="field"><label for="paste-name">Tên bài học</label><input type="text" id="paste-name" placeholder="Ví dụ: Bài 1 — Gia đình" maxlength="100"></div><div class="field"><label for="paste-words">Danh sách từ (mỗi dòng 1 từ)</label><textarea id="paste-words" spellcheck="false" placeholder="学校 | がっこう | Trường học&#10;先生 | せんせい | Giáo viên&#10;学生 | がくせい | Học sinh"></textarea></div><div class="paste-actions">${button(icon('plus')+' Lưu bài học','addPasted')}${button('Điền dữ liệu mẫu','fillPaste','ghost')}</div></details>
+      </div><div class="formats"><h3>Định dạng dữ liệu</h3><p>Nhập 3 cột theo thứ tự: <code>kanji</code>, <code>hira</code>, <code>vi</code>. Với từ không có Hán tự, để trống cột kanji.</p><div class="format-pre">kanji,hira,vi\n学校,がっこう,Trường học\n先生,せんせい,Giáo viên\n友達,ともだち,Bạn bè</div><p>Hỗ trợ CSV, Excel XLSX, TXT <code>kanji | hira | vi</code>, TSV và JSON. Cần ít nhất 4 đáp án khác nhau trong bài cho mỗi kiểu luyện.</p><div class="backup-actions">${button(icon('download')+' CSV mẫu','downloadTemplate','secondary small')}${button(icon('download')+' JSON mẫu','downloadJsonTemplate','ghost small')}</div>
+      <div class="divider-line"></div><h3>Sao lưu và chuyển dữ liệu</h3><p>${CLOUD_ENABLED?'Thời gian học, thống kê ngày và lịch sử luyện tập lưu trên thiết bị; bài học trên Supabase. Xuất bản sao để giữ một bản chép đề và tiến độ. Khôi phục chỉ lấy tiến độ cá nhân, không ghi đè đề chung.':'Dữ liệu lưu trên trình duyệt máy này; có thể xuất bản sao.'}</p><div class="backup-actions">${button(icon('upload')+' Khôi phục tiến độ','importBackup','ghost small')}${CLOUD_ENABLED&&localRaw.length?button(icon('upload')+' Đưa '+localRaw.length+' bài V1 lên cloud','importV1','secondary small'):''}</div></div></div>`;
+    const guestPanel=`<div class="panel" style="margin-bottom:17px"><h2>Bạn đang học với quyền khách</h2><p class="lead" style="margin:8px 0 16px">Không cần đăng nhập để học bài công khai. Muốn đăng bài mới, admin hãy đăng nhập ở góc trên bên phải.</p>${button(icon('download')+' Tải CSV mẫu','downloadTemplate','ghost small')}</div>`;
+    return `<section class="page-heading"><div><div class="eyebrow">SHARED VOCABULARY LIBRARY</div><h1>Kho bài học</h1><p>${CLOUD_ENABLED?'Danh sách đề học dùng chung cho mọi thiết bị.':'Chế độ dùng thử chưa đồng bộ.'}</p></div><div class="toolbar">${button(icon('rotate')+' Đồng bộ đề','syncNow','secondary small',CLOUD_ENABLED?'':'disabled title="Chưa kết nối Supabase"')}${button(icon('download')+' Xuất bản sao','exportBackup','ghost small')}</div></section>
+      ${statusInfo}${canManage?adminPanel:guestPanel}
+      <div class="section-head"><div><h2>${CLOUD_ENABLED?'Bài học trên hệ thống':'Các bài đã lưu'} (${data.lessons.length})</h2><p>${canManage?'Admin có thể sửa, ẩn, xóa hoặc tải CSV.':'Chọn học hoặc xem từ vựng. Kho tự đồng bộ định kỳ.'}</p></div></div>
+      <div class="library-list">${data.lessons.length?data.lessons.map(l=>`<div class="library-item"><div class="library-item-info"><strong>${esc(l.name)} ${l.published===false?'<span class="lesson-chip hidden">ĐÃ ẨN</span>':''}</strong><span>${l.words.length} từ · ${modesSummary(l)}/3 chế độ · Tạo ${fmtDate(l.createdAt)}</span></div><div class="library-actions">${button('Học','learn','primary small',`data-id="${esc(l.id)}" ${modesSummary(l)?'':'disabled'}`)}<button class="btn ghost small icon-only" aria-label="Xem bài ${esc(l.name)}" data-action="inspectLesson" data-id="${esc(l.id)}" title="Xem bài">${icon('file')}</button>${canManage?`<button class="btn ghost small icon-only" aria-label="Sửa bài ${esc(l.name)}" data-action="editLesson" data-id="${esc(l.id)}" title="Sửa bài">${icon('edit')}</button>`:''}<button class="btn ghost small icon-only" aria-label="Tải bài ${esc(l.name)}" data-action="exportLesson" data-id="${esc(l.id)}" title="Xuất CSV">${icon('download')}</button>${canManage?`${CLOUD_ENABLED?button(l.published===false?'Công khai':'Ẩn bài','togglePublish','ghost small',`data-id="${esc(l.id)}"`):''}<button class="btn ghost small icon-only" aria-label="Xóa bài ${esc(l.name)}" data-action="deleteLesson" data-id="${esc(l.id)}" title="Xóa bài">${icon('trash')}</button>`:''}</div></div>`).join(''):`<div class="empty-card"><div class="big">本</div><h3>Kho chưa có bài học</h3><p>${CLOUD_ENABLED?'Admin hãy đăng bài đầu tiên.':'Tải lên bài đầu tiên ở ô phía trên.'}</p></div>`}</div>`;
+  }
+  function renderStats(){
+    const today=readDay(dayKey()),days14=Array.from({length:14},(_,i)=>pastDay(i));
+    const past7=Array.from({length:7},(_,i)=>readDay(pastDay(i)));
+    const sum=(arr,field)=>arr.reduce((total,d)=>total+(Number(d[field])||0),0);
+    const dates=Object.keys(data.activity).sort().reverse();
+    const maxMinutes=Math.max(1,...days14.map(date=>readDay(date).durationMs/60000));
+    const sevenWords=new Set(past7.flatMap(d=>d.wordIds));
+    return `<section class="page-heading"><div><div class="eyebrow">LEARNING JOURNAL</div><h1>Thống kê học tập</h1><p>Theo dõi thời gian học và số từ đã luyện theo từng ngày.</p></div>
+      <div class="toolbar">${button(icon('download')+' Xuất thống kê CSV','exportDailyCsv','secondary small')}</div></section>
+      <div class="notice"><strong>Cách tính:</strong> Đồng hồ chỉ chạy khi đang mở màn hình trắc nghiệm và tab đang hoạt động; tự tạm dừng sau 5 phút không thao tác. <strong>Số từ</strong> là số từ khác nhau đã trả lời trong ngày (không cộng lặp khi luyện lại hoặc đổi chế độ). Thống kê cá nhân lưu trên trình duyệt của thiết bị này.</div>
+      <div class="section-head"><div><h2>Hôm nay · ${displayDate(dayKey())}</h2><p>Các con số cập nhật theo hoạt động thực tế.</p></div></div>
+      <div class="stats-grid" style="margin-top:0">${stat('Thời gian',displayTime(today.durationMs),'clock','Đã ghi nhận hôm nay')}${stat('Số từ đã luyện',today.wordIds.length,'book','Từ khác nhau')}${stat('Số từ trả lời đúng',today.correctWordIds.length,'check','Từ khác nhau từng đúng')}${stat('Lượt trả lời',today.answered,'target',today.correct+' lượt đúng')}</div>
+      <div class="section-head"><div><h2>7 ngày gần nhất</h2><p>Gồm cả hôm nay.</p></div></div>
+      <div class="stats-grid" style="margin-top:0">${stat('Tổng thời gian',displayTime(sum(past7,'durationMs')),'clock','Trong 7 ngày')}${stat('Từ đã gặp',sevenWords.size,'book','Không đếm trùng giữa các ngày')}${stat('Lượt trả lời',sum(past7,'answered'),'target','Trong 7 ngày')}${stat('Buổi hoàn thành',sum(past7,'sessions'),'check','Trong 7 ngày')}</div>
+      <div class="section-head"><div><h2>Biểu đồ 14 ngày</h2><p>Mới nhất bên trái · Cột: thời gian học · Số dưới cột: từ khác nhau.</p></div></div>
+      <div class="panel chart-panel"><div class="daily-chart-scroll"><div class="daily-chart" role="img" aria-label="Biểu đồ số phút và số từ luyện theo từng ngày">
+       ${days14.map(date=>{const d=readDay(date),height=d.durationMs?Math.max(5,Math.round(d.durationMs/60000/maxMinutes*100)):0;return `<div class="daily-chart-item" title="${displayDate(date)}: ${displayTime(d.durationMs)}, ${d.wordIds.length} từ"><div class="daily-chart-value">${displayTime(d.durationMs)}</div><div class="daily-chart-track"><div class="daily-chart-bar" style="height:${height}%"></div></div><strong>${d.wordIds.length} từ</strong><span>${date.slice(8)}/${date.slice(5,7)}</span></div>`;}).join('')}
+      </div></div></div>
+      <div class="section-head"><div><h2>Nhật ký từng ngày</h2><p>Lưu các ngày có học, bao gồm cả những buổi chưa hoàn thành.</p></div></div>
+      <div class="panel"><div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Thời gian</th><th>Từ khác nhau</th><th>Từ từng đúng</th><th>Lượt trả lời</th><th>Buổi hoàn thành</th></tr></thead><tbody>
+      ${dates.length?dates.map(date=>{const d=readDay(date);return `<tr><td>${displayDate(date)}</td><td>${displayTime(d.durationMs)}</td><td>${d.wordIds.length}</td><td>${d.correctWordIds.length}</td><td>${d.answered} (${d.correct} đúng)</td><td>${d.sessions}</td></tr>`;}).join(''):'<tr><td colspan="6" class="daily-empty">Chưa có dữ liệu. Vào Luyện tập và bắt đầu làm bài để được ghi nhận.</td></tr>'}
+      </tbody></table></div><p class="mini-annotation">Bạn có thể xuất CSV ở đầu trang; bản sao tiến độ JSON cũng bao gồm dữ liệu thống kê. Dữ liệu cũ của V2 không có thông tin thời gian hoặc từ khác nhau theo ngày nên không thể tự suy ra các giá trị này.</p></div>`;
+  }
+  function renderMistakes() {const list=data.lessons.map(l=>({l,items:Object.entries(data.mistakes[l.id]||{}).map(([key,r])=>({key,...r})).filter(x=>l.words.some(w=>w.id===x.wordId)&&MODE[x.mode])})).filter(x=>x.items.length);
+    return `<section class="page-heading"><div><div class="eyebrow">REVIEW & RETENTION</div><h1>Ôn lại từ trả lời sai</h1><p>Hệ thống ghi nhớ những từ bạn trả lời chưa đúng trong từng kiểu luyện.</p></div></section>
+    ${list.length?`<div class="mistake-list">${list.map(({l,items})=>`<div class="mistake-item"><div><div class="eyebrow" style="font-size:9px;margin-bottom:5px">${esc(l.name)}</div><h3>${items.length} từ cần ôn</h3><p>${items.slice(0,6).map(x=>{const w=l.words.find(w=>w.id===x.wordId);return esc(w?.kanji||w?.hira||'');}).join(' · ')}${items.length>6?' …':''}</p></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill">${items.length} mục</span>${button(icon('repeat')+' Ôn lại','reviewLesson','primary small',`data-id="${esc(l.id)}"`)}</div></div>`).join('')}</div><p class="mini-annotation">Lưu ý: nếu cùng một từ sai ở 2 chế độ, hệ thống sẽ lưu thành 2 lượt ôn riêng. Khi làm đúng, lỗi của chế độ đó được xóa khỏi danh sách.</p>`:
+      `<div class="empty-card"><div class="big">花</div><h3>Chưa có từ cần ôn!</h3><p>Khi bạn chọn sai, từ đó sẽ xuất hiện ở đây để luyện lại.</p>${button(icon('arrow')+' Đi luyện tập','toPractice')}</div>`}`; }
+  function csvText(rows) {return rows.map(r=>r.map(c=>{let s=String(c??'');if(/[",\r\n]/.test(s))s='"'+s.replace(/"/g,'""')+'"';return s;}).join(',')).join('\r\n');}
+  function download(text,name,mime='text/plain;charset=utf-8') {const blob=new Blob([text],{type:mime});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+  function templateCsv() {download('\uFEFF'+csvText([['kanji','hira','vi'],...DEFAULT]),'mau_tu_vung_nhat.csv','text/csv;charset=utf-8');}
+  function templateJson() {download(JSON.stringify({name:'Mẫu bài học N5',words:DEFAULT.map(([kanji,hira,vi])=>({kanji,hira,vi}))},null,2),'mau_tu_vung_nhat.json','application/json;charset=utf-8');}
+  function exportLesson(lesson) {download('\uFEFF'+csvText([['kanji','hira','vi'],...lesson.words.map(w=>[w.kanji,w.hira,w.vi])]),(lesson.name.replace(/[\\/:*?"<>|]/g,'_')||'bai_hoc')+'.csv','text/csv;charset=utf-8');}
+  function exportBackup() {download(JSON.stringify({format:CLOUD_ENABLED?'kotoba-lab-backup-v2':'kotoba-lab-backup-v1',exportedAt:new Date().toISOString(),data},null,2),'kotoba_lab_backup_'+new Date().toISOString().slice(0,10)+'.json','application/json;charset=utf-8');toast('Đã xuất bản sao toàn bộ dữ liệu.');}
+  function splitDelimited(text,sep) {const rows=[];let row=[],cell='',inside=false;let s=text.replace(/^\uFEFF/,'');for(let i=0;i<s.length;i++){const c=s[i];if(c==='"'){if(inside&&s[i+1]==='"'){cell+='"';i++;}else inside=!inside;}else if(c===sep&&!inside){row.push(cell);cell='';}else if((c==='\r'||c==='\n')&&!inside){if(c==='\r'&&s[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x.trim()))rows.push(row);row=[];cell='';}else cell+=c;}if(inside)throw Error('File CSV có dấu ngoặc kép chưa đóng.');row.push(cell);if(row.some(x=>x.trim()))rows.push(row);return rows;}
+  function detectSeparator(text) {const line=text.split(/\r?\n/).find(l=>l.trim())||'';let scores=[',','\t',';','|'].map(sep=>({sep,count:line.split(sep).length-1})).sort((a,b)=>b.count-a.count);return scores[0].count? scores[0].sep: '|';}
+  function normalizeHeader(s) {return standard(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[_\s-]/g,'');}
+  function mapRows(rows) {if(!rows.length)throw Error('File không có dữ liệu.');let head=rows[0].map(normalizeHeader);const aliases={kanji:['kanji','hantu','chuhan','chunhat','japanese','chuhanquoc'],hira:['hira','hiragana','cachdoc','phatam','kana','reading'],vi:['vi','nghia','tiengviet','vietnamese','meaning','translation','dichnghia']};let indices={};for(const [field,names] of Object.entries(aliases)){const i=head.findIndex(x=>names.includes(x));if(i>=0)indices[field]=i;}const hasHeader=Object.keys(indices).length>=2;const start=hasHeader?1:0;let result=[];for(const row of rows.slice(start)){const nonempty=row.some(v=>String(v??'').trim());if(!nonempty)continue;let kanji='',hira='',vi='';if(hasHeader){kanji=row[indices.kanji]??'';hira=row[indices.hira]??'';vi=row[indices.vi]??'';}else if(row.length>=3){[kanji,hira,vi]=row;}else if(row.length===2){[hira,vi]=row;}else continue;kanji=String(kanji).trim().slice(0,180);hira=String(hira).trim().slice(0,180);vi=String(vi).trim().slice(0,180);if((kanji||hira)&&vi)result.push({kanji,hira,vi});}if(!result.length)throw Error('Không có từ hợp lệ. Cần ít nhất cột hira và vi (có thể thêm kanji).');return result.slice(0,5000);}
+  function parseText(text){const clean=text.replace(/^\uFEFF/,'').trim();if(!clean)throw Error('File trống.');if(clean[0]==='['||clean[0]==='{') {try{return parseJSONWords(JSON.parse(clean));}catch(e){if(e instanceof SyntaxError) throw Error('JSON không hợp lệ: '+e.message);throw e;}}return mapRows(splitDelimited(clean,detectSeparator(clean)));}
+  function parseJSONWords(parsed) {let words=Array.isArray(parsed)?parsed:parsed.words||parsed.vocabulary||parsed.items||parsed.data;if(!Array.isArray(words))throw Error('JSON cần là mảng từ hoặc đối tượng có trường "words".');const result=words.map(x=>{if(Array.isArray(x))return {kanji:x[0]||'',hira:x[1]||'',vi:x[2]||''};return {kanji:x?.kanji??x?.hanTu??x?.['Hán tự']??'',hira:x?.hira??x?.hiragana??x?.reading??'',vi:x?.vi??x?.vietnamese??x?.meaning??x?.nghia??''};});return mapRows([['kanji','hira','vi'],...result.map(x=>[x.kanji,x.hira,x.vi])]);}
+  const tdValue=(c,strings)=>{const type=c.getAttribute('t'),v=c.getElementsByTagName('v')[0]?.textContent??'';if(type==='s')return strings[Number(v)]??'';if(type==='inlineStr')return [...c.getElementsByTagName('t')].map(x=>x.textContent).join('');if(type==='str')return v;return v;};
+  async function parseXLSX(file){const buffer=await file.arrayBuffer(),bytes=new Uint8Array(buffer),dv=new DataView(buffer);const signature=(p,n)=>p>=0&&p+4<=dv.byteLength&&dv.getUint32(p,true)===n;let end=-1;for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){if(signature(i,0x06054b50)){end=i;break;}}if(end<0)throw Error('File XLSX bị lỗi hoặc không phải Excel .xlsx.');let offset=dv.getUint32(end+16,true);const fileCount=dv.getUint16(end+10,true);const entryMap=new Map();const decoder=new TextDecoder();for(let i=0;i<fileCount;i++){if(!signature(offset,0x02014b50))throw Error('Cấu trúc XLSX không hợp lệ.');const method=dv.getUint16(offset+10,true),length=dv.getUint32(offset+20,true),nLen=dv.getUint16(offset+28,true),eLen=dv.getUint16(offset+30,true),cLen=dv.getUint16(offset+32,true),local=dv.getUint32(offset+42,true),name=decoder.decode(bytes.slice(offset+46,offset+46+nLen));entryMap.set(name,{method,length,local});offset+=46+nLen+eLen+cLen;}
+    async function extract(name){const e=entryMap.get(name);if(!e)return null;if(!signature(e.local,0x04034b50))throw Error('Nén ZIP không hợp lệ.');const start=e.local+30+dv.getUint16(e.local+26,true)+dv.getUint16(e.local+28,true);const compressed=bytes.slice(start,start+e.length);if(e.method===0)return decoder.decode(compressed);if(e.method!==8)throw Error('XLSX sử dụng kiểu nén chưa hỗ trợ.');if(typeof DecompressionStream==='undefined')throw Error('Trình duyệt chưa hỗ trợ đọc XLSX trực tiếp. Hãy lưu Excel thành CSV UTF-8.');try{const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return await new Response(stream).text();}catch{throw Error('Không đọc được file Excel. Hãy lưu lại dưới dạng CSV UTF-8.');}}
+    const xmlParse=text=>{const doc=new DOMParser().parseFromString(text,'application/xml');if(doc.querySelector('parsererror'))throw Error('XML trong XLSX bị lỗi.');return doc;};
+    const sharedDoc=await extract('xl/sharedStrings.xml');const strings=sharedDoc?[...xmlParse(sharedDoc).getElementsByTagName('si')].map(si=>[...si.getElementsByTagName('t')].map(x=>x.textContent).join('')):[];
+    const sheetFiles=[...entryMap.keys()].filter(name=>/^xl\/worksheets\/sheet\d+\.xml$/i.test(name)).sort((a,b)=>Number(a.match(/sheet(\d+)/i)[1])-Number(b.match(/sheet(\d+)/i)[1]));if(!sheetFiles.length)throw Error('File Excel không có sheet dữ liệu.');const sheet=xmlParse(await extract(sheetFiles[0]));let rows=[];for(const r of sheet.getElementsByTagName('row')){const values=[];let nextIndex=0;for(const c of r.getElementsByTagName('c')){const col=(c.getAttribute('r')||'').match(/^[A-Z]+/i)?.[0];let idx=nextIndex;if(col){idx=0;for(const ch of col.toUpperCase())idx=idx*26+ch.charCodeAt(0)-64;idx--;}values[idx]=tdValue(c,strings);nextIndex=idx+1;}if(values.some(v=>String(v??'').trim()))rows.push(values.map(x=>x??''));}return mapRows(rows);
+  }
+  function uniqueName(name){const original=String(name).trim().slice(0,100)||'Bài học mới';let n=original,i=2;while(data.lessons.some(l=>l.name.toLowerCase()===n.toLowerCase()))n=original+' ('+(i++)+')';return n;}
+  async function addLesson(name,words){
+    if(!Array.isArray(words)||!words.length||words.length>5000)throw Error('Bài phải có 1–5000 từ.');
+    const l=CLOUD_ENABLED?await cloudCreateLesson(name,words):{id:id(),name:uniqueName(name),isDemo:false,createdAt:new Date().toISOString(),words:makeWords(words)};
+    data.lessons.unshift(l);data.activeLessonId=l.id;save();return l;
+  }
+  async function importFiles(files){if(CLOUD_ENABLED&&!isAdmin)return toast('Chỉ admin được đăng bài.','error');let ok=0,errors=[];for(const f of [...files]){try{if(f.size>8*1024*1024)throw Error('File lớn hơn 8 MB.');const ext=f.name.split('.').pop().toLowerCase();if(!['csv','tsv','txt','json','xlsx'].includes(ext))throw Error('Định dạng chưa hỗ trợ.');let content;if(ext==='xlsx')content=await parseXLSX(f);else content=parseText(await f.text());const name=f.name.replace(/\.[^.]*$/,'');await addLesson(name,content);ok++;}catch(e){errors.push(f.name+': '+e.message);}}if(ok){toast('Đã đăng '+ok+' bài học'+(CLOUD_ENABLED?' lên hệ thống':' trên máy')+'.');setView('library');if(CLOUD_ENABLED)await syncLessons({silent:true});}if(errors.length)toast(errors.slice(0,3).join(' | ')+(errors.length>3?' ...':''),'error');}
+  function openModal(title,body,subtitle='') {closeModal();const root=$('#modal-root');root.innerHTML=`<div class="modal-overlay" id="modal-overlay"><div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-head"><div><h2>${esc(title)}</h2>${subtitle?`<p>${esc(subtitle)}</p>`:''}</div><button class="btn ghost small icon-only" data-action="closeModal" aria-label="Đóng">${icon('close')}</button></div>${body}</div></div>`;activeModal=title;}
+  function closeModal(){const root=$('#modal-root');root.innerHTML='';activeModal=null;}
+  function inspectLesson(l){openModal(l.name,`<p class="lead">${l.words.length} từ vựng · ${modesSummary(l)} chế độ có thể luyện</p><div class="table-wrap" style="max-height:420px"><table><thead><tr><th>Hán tự</th><th>Hiragana</th><th>Tiếng Việt</th></tr></thead><tbody>${l.words.map(w=>`<tr><td>${esc(w.kanji||'—')}</td><td>${esc(w.hira||'—')}</td><td>${esc(w.vi||'—')}</td></tr>`).join('')}</tbody></table></div><div class="modal-actions">${(!CLOUD_ENABLED||isAdmin)?button('Sửa bài','editLesson','ghost',`data-id="${esc(l.id)}"`):''}${button(icon('arrow')+' Học bài này','learn','primary',`data-id="${esc(l.id)}"`)}</div>`,'Xem nội dung bài học');}
+  function editLesson(l){if(CLOUD_ENABLED&&!isAdmin)return toast('Chỉ admin được sửa bài.','error');openModal('Chỉnh sửa bài học',`<div class="field"><label for="edit-name">Tên bài học</label><input type="text" id="edit-name" value="${esc(l.name)}" maxlength="100" required></div><div class="field"><label for="edit-words">Từ vựng — 1 dòng / 1 từ, ngăn bằng dấu |</label><textarea id="edit-words" spellcheck="false" rows="12">${esc(l.words.map(w=>[w.kanji,w.hira,w.vi].join(' | ')).join('\n'))}</textarea></div><div class="helper">Sửa nội dung rồi lưu. Khi sửa danh sách, tiến độ ôn sai của bài này sẽ được đặt lại để tránh nhầm từ.</div><div class="modal-actions">${button('Hủy','closeModal','ghost')}${button(icon('check')+' Lưu thay đổi','saveEdited','primary',`data-id="${esc(l.id)}"`)}</div>`);}
+  async function saveEdited(l){
+    if(cloudBusy)return;
+    if(CLOUD_ENABLED&&!isAdmin)return toast('Chỉ admin được sửa bài.','error');
+    const name=$('#edit-name')?.value.trim(),raw=$('#edit-words')?.value||'';
+    if(!name)return toast('Vui lòng nhập tên bài.','error');
+    let words;try{words=mapRows(splitDelimited(raw,'|'));}catch(e){return toast(e.message,'error');}
+    cloudBusy=true;
+    try {
+      if(CLOUD_ENABLED){await cloudUpdateLesson(l,{title:name.slice(0,100),words:makeWords(words)});await syncLessons({silent:true});}
+      else{l.name=name.slice(0,100);l.words=makeWords(words);l.isDemo=false;}
+      delete data.mistakes[l.id];save();closeModal();render();toast('Đã lưu thay đổi bài học.');
+    } catch(e){toast('Không lưu được: '+e.message,'error');}
+    finally{cloudBusy=false;}
+  }
+  function deleteLesson(l){if(CLOUD_ENABLED&&!isAdmin)return toast('Chỉ admin được xóa bài.','error');openModal('Xóa bài học?',`<p class="lead">Bạn sắp xóa <b>${esc(l.name)}</b> cùng dữ liệu ôn sai của bài này. Thao tác không thể hoàn tác.</p><div class="modal-actions">${button('Hủy','closeModal','ghost')}${button(icon('trash')+' Xóa bài','confirmDelete','danger',`data-id="${esc(l.id)}"`)}</div>`);}
+  function restoreBackup(json){if(!json||!['kotoba-lab-backup-v1','kotoba-lab-backup-v2'].includes(json.format)||!json.data||!Array.isArray(json.data.lessons))throw Error('Đây không phải bản sao KOTOBA LAB hợp lệ.');const payload=json.data;if(payload.lessons.length>250)throw Error('Bản sao có quá nhiều bài học.');for(const l of payload.lessons){if(!l||typeof l.name!=='string'||!Array.isArray(l.words)||l.words.length>5000)throw Error('Một số bài học có cấu trúc không hợp lệ.');for(const w of l.words){if(!w||typeof w.id!=='string'||!['kanji','hira','vi'].every(x=>typeof w[x]==='string'))throw Error('Dữ liệu từ vựng không hợp lệ.');}}const clean={activity:sanitizeActivity(payload.activity),lessons:payload.lessons,mistakes:payload.mistakes&&typeof payload.mistakes==='object'?payload.mistakes:{},stats:{total:0,correct:0,streak:0,bestStreak:0,history:[],...(payload.stats||{})},preferences:{mode:'hira_vi',count:'all',...(payload.preferences||{})},activeLessonId:payload.activeLessonId||payload.lessons[0]?.id||null};if(CLOUD_ENABLED){data.activity=clean.activity;data.mistakes=clean.mistakes;data.stats=clean.stats;data.preferences=clean.preferences;data.activeLessonId=data.lessons.some(l=>l.id===clean.activeLessonId)?clean.activeLessonId:data.lessons[0]?.id||null;toast('Đã khôi phục tiến độ cá nhân. Kho đề chung không bị thay đổi.');}else{data=clean;toast('Đã khôi phục dữ liệu từ bản sao.');}save();setView('library');}
+  document.addEventListener('click',async e=>{const nav=e.target.closest('[data-nav]');if(nav){setView(nav.dataset.nav);return;}const target=e.target.closest('[data-action]');if(!target)return;const action=target.dataset.action,lesson=getLesson(target.dataset.id);switch(action){
+    case 'toPractice':setView('practice');break;
+    case 'toLibrary':setView('library');break;
+    case 'toStats':setView('stats');break;
+    case 'exportDailyCsv':exportDailyCsv();break;
+    case 'toggleStudyPause':if(quiz&&!quiz.done){flushStudyClock();quiz.paused=!quiz.paused;quiz.lastActionAt=Date.now();studyLastAt=Date.now();save();render();}break;
+    case 'learn':if(lesson){data.activeLessonId=lesson.id;save();quiz=null;setView('practice');}break;
+    case 'selectMode':if(target.disabled)break;data.preferences.mode=target.dataset.mode;save();render();break;
+    case 'startPractice':beginQuiz();break;
+    case 'answer':chooseAnswer(Number(target.dataset.index));break;
+    case 'nextQuestion':nextQuestion();break;
+    case 'exitQuiz':flushStudyClock();save();quiz=null;setView('practice');break;
+    case 'redoQuiz':{const l=quiz?.lessonId,m=quiz?.mode;beginQuiz({lessonId:l,mode:m});break;}
+    case 'reviewResultWrong':{const ids=quiz?.wrong.map(w=>w.word.id);const l=quiz?.lessonId,m=quiz?.mode;beginQuiz({lessonId:l,mode:m,wordIds:ids});break;}
+    case 'pickFiles':if(!CLOUD_ENABLED||isAdmin)$('#file-picker').click();else toast('Chỉ admin được đăng bài.','error');break;
+    case 'downloadTemplate':templateCsv();break;
+    case 'downloadJsonTemplate':templateJson();break;
+    case 'exportLesson':if(lesson)exportLesson(lesson);break;
+    case 'exportBackup':exportBackup();break;
+    case 'importBackup':$('#backup-picker').click();break;
+    case 'inspectLesson':if(lesson)inspectLesson(lesson);break;
+    case 'editLesson':if(lesson)editLesson(lesson);break;
+    case 'saveEdited':if(lesson)await saveEdited(lesson);break;
+    case 'deleteLesson':if(lesson)deleteLesson(lesson);break;
+    case 'confirmDelete':if(lesson){
+      if(cloudBusy)break;
+      cloudBusy=true;
+      try{
+        if(CLOUD_ENABLED)await cloudDeleteLesson(lesson);
+        data.lessons=data.lessons.filter(l=>l.id!==lesson.id);delete data.mistakes[lesson.id];
+        if(data.activeLessonId===lesson.id)data.activeLessonId=data.lessons[0]?.id||null;
+        save();closeModal();render();toast('Đã xóa bài học'+(CLOUD_ENABLED?' trên hệ thống':'')+'.');
+        if(CLOUD_ENABLED)await syncLessons({silent:true});
+      }catch(err){toast('Không xóa được: '+err.message,'error');}
+      finally{cloudBusy=false;}
+    }break;
+    case 'togglePublish':if(lesson&&isAdmin&&!cloudBusy){
+      cloudBusy=true;
+      try{await cloudUpdateLesson(lesson,{published:lesson.published===false});await syncLessons({silent:true});render();toast(lesson.published===false?'Đã công khai bài học.':'Đã ẩn bài khỏi người học.');}
+      catch(err){toast('Không đổi được trạng thái: '+err.message,'error');}
+      finally{cloudBusy=false;}
+    }break;
+    case 'syncNow':await syncLessons();if(!cloudError&&CLOUD_ENABLED)toast('Đã tải danh sách bài mới nhất.');break;
+    case 'openLogin':openLogin();break;
+    case 'loginSubmit':await signIn();break;
+    case 'logout':await signOut();break;
+    case 'importV1':{
+      if(!isAdmin||!CLOUD_ENABLED)break;
+      const old=JSON.parse(localStorage.getItem(STORAGE)||'null');
+      const lessons=(old?.lessons||[]).filter(l=>!l.isDemo&&Array.isArray(l.words));
+      if(!lessons.length)return toast('Không có bài V1 cần chuyển.');
+      if(!confirm('Đưa '+lessons.length+' bài của V1 lên kho chung? Bài gốc V1 vẫn được giữ lại.'))break;
+      let ok=0;const fails=[];
+      for(const l of lessons){try{await addLesson(l.name,l.words);ok++;}catch(err){fails.push(l.name+': '+err.message);}}
+      await syncLessons();toast('Đã đăng '+ok+'/'+lessons.length+' bài từ V1.');
+      if(fails.length)toast(fails.slice(0,2).join(' | '),'error');
+      break;
+    }
+    case 'closeModal':closeModal();break;
+    case 'fillPaste':$('#paste-name').value='Bài từ vựng mẫu';$('#paste-words').value=DEFAULT.map(x=>x.join(' | ')).join('\n');break;
+    case 'addPasted':{const title=$('#paste-name')?.value.trim(),raw=$('#paste-words')?.value;if(!title)return toast('Hãy nhập tên bài học.','error');try{const words=parseText(raw);await addLesson(title,words);setView('library');toast('Đã đăng bài học mới.');if(CLOUD_ENABLED)await syncLessons({silent:true});}catch(e){toast(e.message,'error');}break;}
+    case 'reviewLesson':{if(!lesson)break;const records=Object.values(data.mistakes[lesson.id]||{}).filter(x=>MODE[x.mode]);if(!records.length)return toast('Không còn từ cần ôn.');const byMode={};for(const r of records)(byMode[r.mode]||(byMode[r.mode]=[])).push(r.wordId);const chosenMode=Object.keys(byMode).sort((a,b)=>byMode[b].length-byMode[a].length)[0];beginQuiz({lessonId:lesson.id,mode:chosenMode,wordIds:byMode[chosenMode]});if(Object.keys(byMode).length>1)toast('Đang ôn '+MODE[chosenMode].label+'. Các chế độ khác vẫn còn trong danh sách.');break;}
+  }});
+  document.addEventListener('change',e=>{if(e.target.id==='practice-lesson'){data.activeLessonId=e.target.value;save();render();}if(e.target.id==='question-count'){data.preferences.count=e.target.value;save();}});
+  $('#file-picker').addEventListener('change',async e=>{if(e.target.files.length)await importFiles(e.target.files);e.target.value='';});
+  $('#backup-picker').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>12*1024*1024)throw Error('Bản sao quá lớn.');const json=JSON.parse(await f.text());if(!window.confirm(CLOUD_ENABLED?'Chỉ khôi phục thống kê cá nhân; không thay thế bài trên Supabase. Tiếp tục?':'Khôi phục bản sao sẽ thay thế dữ liệu hiện tại. Tiếp tục?'))return;restoreBackup(json);}catch(err){toast('Không thể khôi phục: '+err.message,'error');}finally{e.target.value='';}});
+  document.addEventListener('dragenter',e=>{if(e.target.closest('#drop-zone')){e.preventDefault();$('#drop-zone').classList.add('dragging');}});
+  document.addEventListener('dragover',e=>{const dz=e.target.closest('#drop-zone');if(dz){e.preventDefault();dz.classList.add('dragging');}});
+  document.addEventListener('dragleave',e=>{const dz=e.target.closest('#drop-zone');if(dz&&!dz.contains(e.relatedTarget))dz.classList.remove('dragging');});
+  document.addEventListener('drop',async e=>{const dz=e.target.closest('#drop-zone');if(dz){e.preventDefault();dz.classList.remove('dragging');if(e.dataTransfer?.files.length)await importFiles(e.dataTransfer.files);}});
+  document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='login-password'){e.preventDefault();signIn();return;}if(e.key==='Escape'&&activeModal){closeModal();return;}if(e.target.id==='drop-zone'&&(e.key==='Enter'||e.key===' ')){e.preventDefault();$('#file-picker').click();return;}if(e.target.closest('input,textarea,select')||activeModal)return;if(view==='practice'&&quiz&&!quiz.done){const q=quiz.questions[quiz.index];if(q.selected!==null&&e.key==='Enter')nextQuestion();else if(q.selected===null){const map={'1':0,'2':1,'3':2,'4':3,'a':0,'b':1,'c':2,'d':3};if(map[e.key.toLowerCase()]!==undefined)chooseAnswer(map[e.key.toLowerCase()]);}}});
+  document.addEventListener('click',e=>{if(e.target.id==='modal-overlay')closeModal();else if(e.target.id==='drop-zone')$('#file-picker').click();});
+  window.addEventListener('storage',e=>{
+    if(e.key===SESSION_KEY&&CLOUD_ENABLED){
+      try{adminSession=e.newValue?JSON.parse(e.newValue):null;}catch{adminSession=null;}
+      isAdmin=false;
+      checkAdmin().then(()=>syncLessons({silent:true}));
+    }
+    if(e.key===(CLOUD_ENABLED?PROGRESS_KEY:STORAGE)&&e.newValue){
+      if(!CLOUD_ENABLED){data=load();quiz=null;render();}
+      else{try{const p=JSON.parse(e.newValue);data.stats=p.stats||data.stats;data.activity=sanitizeActivity(p.activity);data.mistakes=p.mistakes||data.mistakes;data.preferences=p.preferences||data.preferences;}catch{}if(!quiz)render();}
+    }
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){flushStudyClock(true);save();}else{studyLastAt=Date.now();if(CLOUD_ENABLED&&Date.now()-cloudSyncedAt>12000)syncLessons({silent:true});}});
+  window.addEventListener('pagehide',()=>{flushStudyClock(true);save();});
+  setInterval(()=>{if(quiz&&!quiz.done)flushStudyClock();else studyLastAt=Date.now();},1000);
+  window.addEventListener('focus',()=>{if(CLOUD_ENABLED&&Date.now()-cloudSyncedAt>12000)syncLessons({silent:true});});
+  if(CLOUD_ENABLED){
+    // Polling không phụ thuộc Supabase Realtime: người dùng khác thấy cập nhật trong <=30 giây khi trang đang mở.
+    setInterval(()=>{if(document.visibilityState==='visible'&&!cloudBusy)syncLessons({silent:true});},30000);
+    (async()=>{if(adminSession)await checkAdmin();await syncLessons();})();
+  }
+
+  document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=icon(el.dataset.icon);});
+  render();
+})();
+</script>
+</body>
+</html>
