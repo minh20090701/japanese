@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#111b26" />
-  <meta name="description" content="Luyện từ vựng tiếng Nhật, theo dõi thời gian và số từ mỗi ngày; kho bài học đồng bộ Supabase." />
-  <title>KOTOBA LAB V3 — Học từ vựng & lịch học tiếng Nhật</title>
+  <meta name="description" content="Luyện từ vựng tiếng Nhật, theo dõi thời gian và số từ mỗi ngày; kho bài học dùng chung và tài khoản học tập." />
+  <title>JPN — Học từ vựng tiếng Nhật</title>
   <style>
     :root {
       --bg: #0b1520; --bg2: #101e2c; --surface: #142434; --surface2: #1b2e41;
@@ -236,6 +236,15 @@
     .login-form input { width:100%; }
     @media(max-width:900px) { .topbar-right { gap:7px; } .sync-indicator { max-width:120px; } }
     @media(max-width:520px) { .sync-indicator { font-size:10px; max-width:95px; } #auth-control { font-size:10px; padding:7px 9px; min-height:34px; } .avatar { display:none; } .topbar { padding:0 12px; } .breadcrumbs { max-width:38%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } }
+    [hidden] { display:none !important; }
+    .auth-tabs{display:flex;gap:8px;margin:2px 0 18px;flex-wrap:wrap}
+    .auth-tabs button{flex:1;min-width:82px}
+    .account-details{padding:16px;border:1px solid var(--line);border-radius:13px;background:var(--surface);margin:13px 0}
+    .account-details strong{overflow-wrap:anywhere}
+    .account-note{font-size:12px;color:var(--muted);line-height:1.65}
+    .profile-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
+    .profile-actions .btn{flex:1}
+    @media(max-width:760px){.nav{grid-template-columns:repeat(5,minmax(0,1fr));}.nav-btn{font-size:9px;}body.has-admin .nav{grid-template-columns:repeat(6,minmax(0,1fr));}body.has-admin .nav-btn{font-size:8px;padding:6px 0;gap:2px;}}
   </style>
 </head>
 <body>
@@ -248,11 +257,12 @@
       <button class="nav-btn" data-nav="library"><span data-icon="layers"></span> Kho bài học</button>
       <button class="nav-btn" data-nav="mistakes"><span data-icon="repeat"></span> Ôn tập lỗi</button>
       <button class="nav-btn" data-nav="stats"><span data-icon="calendar"></span> Thống kê</button>
+      <button class="nav-btn" data-nav="manage" id="admin-nav" hidden><span data-icon="upload"></span> Quản lý đề</button>
     </nav></div>
     <div class="side-bottom"><div class="jp">継続は力なり。</div><p>Kiên trì chính là sức mạnh.<br>Học một chút mỗi ngày nhé!</p></div>
-    <div class="side-foot">HỌC ONLINE • KOTOBA LAB V3.0</div>
+    <div class="side-foot">HỌC ONLINE • KOTOBA LAB V4.0</div>
   </aside>
-  <main class="main"><header class="topbar"><div class="breadcrumbs">KOTOBA LAB <span style="opacity:.45;padding:0 8px">/</span> <b id="breadcrumb">Tổng quan</b></div><div class="topbar-right"><span class="top-tip">日本語を勉強しましょう</span><span id="sync-indicator" class="sync-indicator">Đang kết nối…</span><button class="btn ghost small" id="auth-control" data-action="openLogin">Đăng nhập admin</button><div class="avatar" aria-label="Học tiếng Nhật">あ</div></div></header><div id="content" class="content"></div></main>
+  <main class="main"><header class="topbar"><div class="breadcrumbs">KOTOBA LAB <span style="opacity:.45;padding:0 8px">/</span> <b id="breadcrumb">Tổng quan</b></div><div class="topbar-right"><span class="top-tip">日本語を勉強しましょう</span><span id="sync-indicator" class="sync-indicator">Đang kết nối…</span><button class="btn ghost small" id="auth-control" data-action="openLogin">Đăng nhập / Đăng ký</button><div class="avatar" aria-label="Học tiếng Nhật">あ</div></div></header><div id="content" class="content"></div></main>
 </div>
 <div id="modal-root"></div><div id="toast-root" class="toast-container" aria-live="polite"></div>
 <input type="file" id="file-picker" class="hide" accept=".csv,.tsv,.txt,.json,.xlsx" multiple>
@@ -264,7 +274,11 @@
   const STORAGE = 'kotoba_lab_data_v1';
   const PROGRESS_KEY = 'kotoba_lab_progress_v2';
   const CACHE_KEY = 'kotoba_public_lessons_v2';
-  const SESSION_KEY = 'kotoba_admin_session_v2';
+  const SESSION_KEY = 'kotoba_admin_session_v2'; // giữ tên khóa cũ để không mất phiên đăng nhập khi nâng cấp
+  const USER_CACHE_PREFIX='kotoba_user_progress_v4_';
+  const USER_PENDING_PREFIX='kotoba_user_pending_v4_';
+  const GUEST_IMPORT_PENDING_PREFIX='kotoba_guest_import_pending_v4_';
+  const GUEST_IMPORTED_KEY='kotoba_guest_import_completed_v4';
   // Giữ nguyên khóa dữ liệu V2 để người dùng nâng cấp không mất tiến độ.
   const CONFIG = window.KOTOBA_CONFIG || {};
   const SUPA_URL = String(CONFIG.SUPABASE_URL||'').trim().replace(/\/$/, '');
@@ -382,7 +396,7 @@
     download('\uFEFF'+csvText(rows),'kotoba_thong_ke_theo_ngay_'+dayKey()+'.csv','text/csv;charset=utf-8');
     toast('Đã xuất thống kê theo ngày.');
   }
-  // Chỉ lấy tiến độ cá nhân từ bộ nhớ máy. Đề chung luôn được tải từ Supabase.
+  // Tiến độ khách vẫn được tải từ bộ nhớ máy; bài chung lấy từ máy chủ.
   if (CLOUD_ENABLED) {
     try {
       const saved=JSON.parse(localStorage.getItem(PROGRESS_KEY)||'null');
@@ -399,17 +413,134 @@
   }
   let view = 'home'; let quiz = null; let activeModal = null;
   let adminSession=null, isAdmin=false, refreshPromise=null, requestVersion=0;
+  let progressReady=false, progressDirty=false, progressBusy=false, progressTimer=null, lastProgressSync=0;
+  let progressNotice='', guestImportPending=false;
   let cloudBusy=false, cloudError='', cloudSyncedAt=0, cloudLoading=CLOUD_ENABLED;
   try {
     const sess=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
     if(sess&&sess.access_token&&sess.refresh_token&&sess.user?.id)adminSession=sess;
   } catch {localStorage.removeItem(SESSION_KEY);}
-  function save() {
-    try {
-      if(CLOUD_ENABLED) localStorage.setItem(PROGRESS_KEY,JSON.stringify({stats:data.stats,mistakes:data.mistakes,preferences:data.preferences,activeLessonId:data.activeLessonId,activity:data.activity}));
-      else localStorage.setItem(STORAGE,JSON.stringify(data));
+  const blankProgress=()=>({stats:{total:0,correct:0,streak:0,bestStreak:0,history:[]},mistakes:{},preferences:{mode:'hira_vi',count:'all'},activity:{},activeLessonId:null});
+  const currentProgress=()=>({stats:data.stats,mistakes:data.mistakes,preferences:data.preferences,activity:data.activity,activeLessonId:data.activeLessonId});
+  function applyProgress(raw){
+    const p=(raw&&typeof raw==='object'&&!Array.isArray(raw))?raw:blankProgress();
+    data.stats={...blankProgress().stats,...(p.stats&&typeof p.stats==='object'?p.stats:{})};
+    data.mistakes=p.mistakes&&typeof p.mistakes==='object'&&!Array.isArray(p.mistakes)?p.mistakes:{};
+    data.preferences={...blankProgress().preferences,...(p.preferences&&typeof p.preferences==='object'?p.preferences:{})};
+    data.activity=sanitizeActivity(p.activity);
+    data.activeLessonId=data.lessons.some(l=>l.id===p.activeLessonId)?p.activeLessonId:(data.lessons[0]?.id||null);
+  }
+  function getLocalProgress(key){try{return JSON.parse(localStorage.getItem(key)||'null');}catch{return null;}}
+  function save(){
+    try{
+      if(CLOUD_ENABLED){
+        if(adminSession?.user?.id){
+          if(!progressReady)return true;
+          localStorage.setItem(USER_CACHE_PREFIX+adminSession.user.id,JSON.stringify(currentProgress()));
+          progressDirty=true;localStorage.setItem(USER_PENDING_PREFIX+adminSession.user.id,'1');scheduleProgressSave();
+        }else localStorage.setItem(PROGRESS_KEY,JSON.stringify(currentProgress()));
+      }else localStorage.setItem(STORAGE,JSON.stringify(data));
       return true;
-    } catch(e) {toast('Không thể lưu tiến độ trong trình duyệt. Hãy kiểm tra dung lượng lưu trữ.','error');return false;}
+    }catch(e){toast('Không thể lưu tiến độ trong trình duyệt. Hãy kiểm tra dung lượng lưu trữ.','error');return false;}
+  }
+  function scheduleProgressSave(delay=1300){
+    if(!CLOUD_ENABLED||!adminSession?.user?.id||!progressReady)return;
+    if(progressTimer)clearTimeout(progressTimer);
+    progressTimer=setTimeout(()=>{progressTimer=null;flushRemoteProgress();},delay);
+  }
+  async function flushRemoteProgress(){
+    if(!progressReady||!adminSession?.user?.id||!progressDirty||progressBusy)return false;
+    progressBusy=true;
+    const userId=adminSession.user.id;
+    const snapshot=JSON.stringify(currentProgress());
+    try{
+      await apiFetch('/rest/v1/kotoba_user_progress?on_conflict=user_id',{
+        method:'POST',admin:true,prefer:'resolution=merge-duplicates,return=minimal',
+        body:{user_id:userId,payload:JSON.parse(snapshot)}
+      });
+      const latest=JSON.stringify(currentProgress());
+      progressDirty=latest!==snapshot;
+      if(!progressDirty){
+        localStorage.removeItem(USER_PENDING_PREFIX+userId);
+        if(localStorage.getItem(GUEST_IMPORT_PENDING_PREFIX+userId)==='1'){
+          localStorage.setItem(GUEST_IMPORTED_KEY,userId);
+          localStorage.removeItem(GUEST_IMPORT_PENDING_PREFIX+userId);
+          localStorage.removeItem(PROGRESS_KEY);
+        }
+      }
+      progressNotice='';lastProgressSync=Date.now();
+      if(progressDirty)scheduleProgressSave(700);
+      updateHeader();return true;
+    }catch(e){progressNotice='Tiến độ chưa gửi lên máy chủ. Dữ liệu vẫn được lưu trên máy.';updateHeader();return false;}
+    finally{progressBusy=false;}
+  }
+  async function initializeUserProgress(){
+    if(!CLOUD_ENABLED||!adminSession?.user?.id)return;
+    const uid=adminSession.user.id;
+    progressReady=false;
+    if(progressTimer){clearTimeout(progressTimer);progressTimer=null;}
+    let remote=null,fetchOk=false;
+    try{
+      const rows=await apiFetch('/rest/v1/kotoba_user_progress?select=payload,updated_at&user_id=eq.'+encodeURIComponent(uid),{admin:true});
+      remote=Array.isArray(rows)?rows[0]?.payload:null;fetchOk=true;
+    }catch(e){progressNotice='Không thể tải tiến độ online. Đang dùng bản lưu trên máy.';}
+    if(adminSession?.user?.id!==uid)return;
+    const local=getLocalProgress(USER_CACHE_PREFIX+uid);
+    const pendingLocal=localStorage.getItem(USER_PENDING_PREFIX+uid)==='1';
+    applyProgress((pendingLocal&&local)?local:(remote||local||blankProgress()));
+    progressReady=true;
+    // Nếu bản lưu từ lần offline chưa tải lên, cho phép gửi sau khi đã đọc được dữ liệu.
+    if((fetchOk&&!remote&&local)||(pendingLocal&&local)){progressDirty=true;scheduleProgressSave(500);}
+    lastProgressSync=Date.now();saveLocalUserOnly();
+    render();updateHeader();
+  }
+  function saveLocalUserOnly(){
+    if(adminSession?.user?.id&&progressReady)try{localStorage.setItem(USER_CACHE_PREFIX+adminSession.user.id,JSON.stringify(currentProgress()));}catch{}
+  }
+  async function refreshUserProgress(){
+    if(!adminSession?.user?.id||!progressReady||progressDirty||quiz)return;
+    const uid=adminSession.user.id;
+    try{
+      const rows=await apiFetch('/rest/v1/kotoba_user_progress?select=payload,updated_at&user_id=eq.'+encodeURIComponent(uid),{admin:true});
+      if(uid!==adminSession?.user?.id||progressDirty||quiz)return;
+      const remote=Array.isArray(rows)?rows[0]?.payload:null;
+      if(remote){applyProgress(remote);saveLocalUserOnly();if(!activeModal)render();}
+      lastProgressSync=Date.now();
+    }catch{};
+  }
+  async function importGuestProgress(){
+    if(!adminSession?.user?.id||!progressReady)return toast('Vui lòng đăng nhập trước.','error');
+    if(guestImportPending||localStorage.getItem(GUEST_IMPORT_PENDING_PREFIX+adminSession.user.id)==='1')return toast('Tiến độ khách đã được gộp. Bạn hãy dùng Lưu tiến độ để hoàn tất đồng bộ.','error');
+    if(localStorage.getItem(GUEST_IMPORTED_KEY))return toast('Tiến độ khách đã được chuyển sang một tài khoản trước đó.','error');
+    const guest=getLocalProgress(PROGRESS_KEY);
+    if(!guest||(!Object.keys(guest.activity||{}).length&&!Number(guest.stats?.total)))return toast('Chưa có tiến độ khách để chuyển.','error');
+    if(!confirm('Gộp tiến độ khách trên máy này vào tài khoản đang đăng nhập? Thời gian và lượt trả lời sẽ được cộng; từ trùng trong ngày chỉ đếm một lần.'))return;
+    guestImportPending=true;
+    try{
+      const target=currentProgress();
+      const sum=['durationMs','answered','correct','sessions'];
+      for(const [date,row] of Object.entries(sanitizeActivity(guest.activity))){
+        const old=target.activity[date]||emptyDay();
+        for(const key of sum)old[key]=(Number(old[key])||0)+(Number(row[key])||0);
+        for(const field of ['wordIds','correctWordIds'])old[field]=[...new Set([...(old[field]||[]),...(row[field]||[])])].slice(0,20000);
+        target.activity[date]=old;
+      }
+      const gstat=guest.stats||{};
+      for(const key of ['total','correct'])target.stats[key]=(Number(target.stats[key])||0)+(Number(gstat[key])||0);
+      target.stats.streak=0;target.stats.bestStreak=Math.max(Number(target.stats.bestStreak)||0,Number(gstat.bestStreak)||0);
+      target.stats.history=[...(gstat.history||[]),...(target.stats.history||[])].slice(0,30);
+      for(const [lessonId,recs] of Object.entries(guest.mistakes||{})){
+        const bucket=target.mistakes[lessonId]||(target.mistakes[lessonId]={});
+        for(const [k,v] of Object.entries(recs||{}))if(!bucket[k])bucket[k]=v;
+      }
+      localStorage.setItem(GUEST_IMPORT_PENDING_PREFIX+adminSession.user.id,'1');
+      save();
+      // Chỉ xóa tiến độ khách khi máy chủ xác nhận đã lưu.
+      const ok=await flushRemoteProgress();
+      if(ok){toast('Đã gộp tiến độ khách vào tài khoản.');}
+      else toast('Đã lưu trên máy; thử đồng bộ lại khi có mạng.','error');
+      closeModal();render();
+    }finally{guestImportPending=false;}
   }
   if (!data.activeLessonId && data.lessons.length) {data.activeLessonId=data.lessons[0].id; save();}
 
@@ -424,7 +555,7 @@
   async function parseApiResponse(res){
     const raw=await res.text();let json=null;
     try {json=raw?JSON.parse(raw):null;} catch { /* Response may be empty/non-JSON */ }
-    if(!res.ok)throw Error(json?.msg||json?.message||json?.error_description||json?.error||('Lỗi kết nối Supabase HTTP '+res.status));
+    if(!res.ok)throw Error(json?.msg||json?.message||json?.error_description||json?.error||('Lỗi kết nối HTTP '+res.status));
     return json;
   }
   async function refreshAuth(force=false){
@@ -441,17 +572,20 @@
         adminSession={...adminSession,...result,expires_at:Math.floor(Date.now()/1000)+(result.expires_in||3600)};
         persistSession();
       }catch(err){
-        adminSession=null;isAdmin=false;persistSession();updateHeader();throw Error('Phiên đăng nhập hết hạn. Hãy đăng nhập lại.');
+        adminSession=null;isAdmin=false;progressReady=false;persistSession();
+        applyProgress(getLocalProgress(PROGRESS_KEY)||blankProgress());
+        data.lessons=data.lessons.filter(l=>l.published);if(view==='manage')view='home';
+        updateHeader();if(!quiz)render();throw Error('Phiên đăng nhập hết hạn. Hãy đăng nhập lại.');
       }
     })();
     try{await refreshPromise;}finally{refreshPromise=null;}
   }
-  async function apiFetch(path,{method='GET',body=null,admin=false}={}){
-    if(!CLOUD_ENABLED)throw Error('Chưa cấu hình Supabase trong config.js.');
-    if(admin&&!adminSession)throw Error('Vui lòng đăng nhập tài khoản admin.');
+  async function apiFetch(path,{method='GET',body=null,admin=false,prefer=null}={}){
+    if(!CLOUD_ENABLED)throw Error('Hệ thống chưa được kết nối. Hãy liên hệ quản trị viên.');
+    if(admin&&!adminSession)throw Error('Vui lòng đăng nhập.');
     if(adminSession)await refreshAuth();
     const send=()=>fetch(SUPA_URL+path,{
-      method,headers:{...apiHeaders(adminSession?.access_token),...(body!==null?{'Content-Type':'application/json'}:{}),...(method!=='GET'?{'Prefer':'return=representation'}:{})},
+      method,headers:{...apiHeaders(adminSession?.access_token),...(body!==null?{'Content-Type':'application/json'}:{}),...(method!=='GET'?{'Prefer':prefer||'return=representation'}:{})},
       ...(body!==null?{body:JSON.stringify(body)}:{}),cache:'no-store'
     });
     let res=await send();
@@ -464,13 +598,15 @@
     })):[],published:row.published!==false,isDemo:false,createdAt:row.created_at||new Date().toISOString(),updatedAt:row.updated_at};
   }
   function updateHeader(){
-    const status=$('#sync-indicator'),auth=$('#auth-control');if(!status||!auth)return;
-    const state=!CLOUD_ENABLED?'Chưa kết nối cloud':cloudError?'Mất kết nối':cloudLoading?'Đang đồng bộ…':isAdmin?'Admin · Cloud':'Đã kết nối';
-    status.textContent=state;status.title=cloudError||state;
-    status.className='sync-indicator'+(!CLOUD_ENABLED?' warn':cloudError?' error':'');
-    auth.textContent=isAdmin?'Đăng xuất':'Đăng nhập admin';
-    auth.dataset.action=isAdmin?'logout':'openLogin';
-    auth.title=isAdmin?(adminSession?.user?.email||'Tài khoản admin'):'Đăng nhập tài khoản quản trị';
+    const status=$('#sync-indicator'),auth=$('#auth-control'),adminNav=$('#admin-nav');if(!status||!auth)return;
+    const state=!CLOUD_ENABLED?'Bản dùng thử':cloudError?'Kết nối gián đoạn':cloudLoading?'Đang tải đề…':progressNotice?'Tiến độ chưa đồng bộ':adminSession?.user?.id?'Đã đăng nhập':'Kho bài trực tuyến';
+    status.textContent=state;status.title=progressNotice||cloudError||state;
+    status.className='sync-indicator'+(!CLOUD_ENABLED?' warn':cloudError||progressNotice?' error':'');
+    auth.textContent=adminSession?.user?.id?'Tài khoản':'Đăng nhập / Đăng ký';
+    auth.dataset.action=adminSession?.user?.id?'openAccount':'openLogin';
+    auth.title=adminSession?.user?.email||'Đăng nhập hoặc đăng ký để lưu tiến độ trên nhiều máy';
+    if(adminNav)adminNav.hidden=!isAdmin;document.body.classList.toggle('has-admin',isAdmin);
+    if(!isAdmin&&view==='manage')view='library';
   }
   async function syncLessons({silent=false}={}){
     if(!CLOUD_ENABLED)return;
@@ -484,11 +620,11 @@
       const publicLessons=data.lessons.filter(l=>l.published);
       try{localStorage.setItem(CACHE_KEY,JSON.stringify(publicLessons));}catch{ /* Offline cache is optional */ }
       if(!data.lessons.some(l=>l.id===data.activeLessonId))data.activeLessonId=data.lessons[0]?.id||null;
-      save();cloudError='';cloudSyncedAt=Date.now();
+      if(!adminSession?.user?.id)save();else saveLocalUserOnly();cloudError='';cloudSyncedAt=Date.now();
       if(!quiz&&!activeModal)render();
     } catch(err) {
       if(version!==requestVersion)return;
-      const before=cloudError;cloudError=err.message;
+      const before=cloudError;cloudError=String(err.message).replace(/supabase/gi,'máy chủ').replace(/\bRLS\b/gi,'phân quyền');
       if(!silent||!before)toast('Không tải được kho bài: '+err.message,'error');
       if(!quiz&&!activeModal)render();
     } finally {
@@ -502,35 +638,98 @@
       const rows=await apiFetch('/rest/v1/kotoba_admins?select=user_id&user_id=eq.'+encodeURIComponent(adminSession.user.id));
       isAdmin=Array.isArray(rows)&&rows.some(x=>x.user_id===adminSession.user.id);
     }catch(e){isAdmin=false;console.warn('Không xác minh được quyền admin:',e.message);}
-    updateHeader();return isAdmin;
+    updateHeader();if(!quiz)render();return isAdmin;
+  }
+  async function authRequest(path,body,method='POST',token=null){
+    if(!CLOUD_ENABLED)throw Error('Hệ thống chưa bật tài khoản.');
+    const res=await fetch(SUPA_URL+path,{method,headers:{...apiHeaders(token),'Content-Type':'application/json'},body:JSON.stringify(body)});
+    return parseApiResponse(res);
+  }
+  async function acceptSession(result){
+    if(!result?.access_token||!result?.refresh_token)throw Error('Không nhận được phiên đăng nhập hợp lệ.');
+    let user=result.user;
+    if(!user?.id){
+      const res=await fetch(SUPA_URL+'/auth/v1/user',{headers:apiHeaders(result.access_token)});
+      user=await parseApiResponse(res);
+    }
+    if(!user?.id)throw Error('Không xác minh được tài khoản.');
+    adminSession={...result,user,expires_at:Math.floor(Date.now()/1000)+(result.expires_in||3600)};
+    isAdmin=false;persistSession();
+    await initializeUserProgress();
+    await checkAdmin();await syncLessons({silent:true});updateHeader();
   }
   async function signIn(){
     if(cloudBusy)return;
     const email=$('#login-email')?.value.trim(),password=$('#login-password')?.value;
-    if(!email||!password)return toast('Nhập email và mật khẩu admin.','error');
+    if(!email||!password)return toast('Vui lòng nhập email và mật khẩu.','error');
     cloudBusy=true;
-    const btn=$('[data-action="loginSubmit"]');if(btn)btn.disabled=true;
-    try {
-      const res=await fetch(SUPA_URL+'/auth/v1/token?grant_type=password',{
-        method:'POST',headers:{...apiHeaders(),'Content-Type':'application/json'},body:JSON.stringify({email,password})
-      });
-      const result=await parseApiResponse(res);
-      adminSession={...result,expires_at:Math.floor(Date.now()/1000)+(result.expires_in||3600)};
-      if(!adminSession.user?.id||!adminSession.refresh_token)throw Error('Supabase không trả về phiên đăng nhập hợp lệ.');
-      persistSession();
-      if(!await checkAdmin())throw Error('Tài khoản này chưa được cấp quyền admin trong bảng kotoba_admins.');
-      closeModal();toast('Đã đăng nhập admin.');await syncLessons();
-    }catch(err){adminSession=null;isAdmin=false;persistSession();updateHeader();toast('Đăng nhập thất bại: '+err.message,'error');}
-    finally{cloudBusy=false;const b=$('[data-action="loginSubmit"]');if(b)b.disabled=false;}
+    try{
+      if(quiz){flushStudyClock();quiz=null;}save();
+      const result=await authRequest('/auth/v1/token?grant_type=password',{email,password});
+      await acceptSession(result);closeModal();toast('Đăng nhập thành công. Tiến độ của bạn đã được tải.');render();
+    }catch(err){toast('Không thể đăng nhập: '+err.message,'error');}
+    finally{cloudBusy=false;}
+  }
+  async function signUp(){
+    if(cloudBusy)return;
+    const email=$('#register-email')?.value.trim(),password=$('#register-password')?.value,confirmPassword=$('#register-confirm')?.value;
+    if(!email||!password)return toast('Nhập email và mật khẩu.','error');
+    if(password.length<8)return toast('Mật khẩu cần tối thiểu 8 ký tự.','error');
+    if(password!==confirmPassword)return toast('Hai mật khẩu chưa khớp.','error');
+    cloudBusy=true;
+    try{
+      const result=await authRequest('/auth/v1/signup',{email,password});
+      if(result?.access_token){await acceptSession(result);closeModal();toast('Đăng ký thành công và đã đăng nhập.');}
+      else{openAuthPanel('login');toast('Đã gửi email xác nhận (nếu hệ thống yêu cầu). Kiểm tra hộp thư trước khi đăng nhập.');}
+    }catch(err){toast('Không thể đăng ký: '+err.message,'error');}
+    finally{cloudBusy=false;}
+  }
+  async function forgotPassword(){
+    if(cloudBusy)return;
+    const email=$('#forgot-email')?.value.trim();if(!email)return toast('Nhập email để nhận hướng dẫn.','error');
+    cloudBusy=true;
+    try{
+      await authRequest('/auth/v1/recover',{email});
+      closeModal();toast('Nếu email có tài khoản, bạn sẽ nhận hướng dẫn đặt lại mật khẩu.');
+    }catch(err){toast('Không gửi được yêu cầu: '+err.message,'error');}
+    finally{cloudBusy=false;}
+  }
+  async function resetPassword(){
+    if(cloudBusy||!adminSession?.access_token)return;
+    const password=$('#reset-password')?.value,confirmPassword=$('#reset-confirm')?.value;
+    if(!password||password.length<8)return toast('Mật khẩu cần tối thiểu 8 ký tự.','error');
+    if(password!==confirmPassword)return toast('Hai mật khẩu chưa khớp.','error');
+    cloudBusy=true;
+    try{await authRequest('/auth/v1/user',{password},'PUT',adminSession.access_token);closeModal();toast('Đã đổi mật khẩu.');}
+    catch(err){toast('Không đổi được mật khẩu: '+err.message,'error');}
+    finally{cloudBusy=false;}
   }
   async function signOut(){
-    // Không để lộ bài nháp của admin trong cache công cộng sau đăng xuất.
+    flushStudyClock();save();
+    if(progressTimer){clearTimeout(progressTimer);progressTimer=null;}
+    if(progressDirty)await flushRemoteProgress();
     const token=adminSession?.access_token;
-    adminSession=null;isAdmin=false;persistSession();requestVersion++;
+    const wasDirty=progressDirty;
+    adminSession=null;isAdmin=false;progressReady=false;progressDirty=false;progressNotice='';persistSession();requestVersion++;
+    applyProgress(getLocalProgress(PROGRESS_KEY)||blankProgress());
     data.lessons=data.lessons.filter(l=>l.published);
-    updateHeader();closeModal();render();
+    if(view==='manage')view='home';
+    updateHeader();closeModal();quiz=null;render();
     if(token)fetch(SUPA_URL+'/auth/v1/logout',{method:'POST',headers:apiHeaders(token)}).catch(()=>{});
-    await syncLessons({silent:true});toast('Đã đăng xuất admin.');
+    await syncLessons({silent:true});
+    toast(wasDirty?'Đã đăng xuất. Một phần tiến độ chưa đồng bộ nhưng vẫn lưu trên máy.':'Đã đăng xuất.');
+  }
+  async function consumeEmailRedirect(){
+    if(!CLOUD_ENABLED||!location.hash.includes('access_token='))return false;
+    const params=new URLSearchParams(location.hash.slice(1));
+    const access_token=params.get('access_token'),refresh_token=params.get('refresh_token'),type=params.get('type');
+    if(!access_token||!refresh_token)return false;
+    history.replaceState(null,'',location.pathname+location.search);
+    try{
+      await acceptSession({access_token,refresh_token,expires_in:Number(params.get('expires_in')||3600)});
+      if(type==='recovery')openResetDialog();else toast('Đã xác nhận tài khoản thành công.');
+      return true;
+    }catch(err){toast('Không thể hoàn tất liên kết email: '+err.message,'error');return false;}
   }
   async function cloudCreateLesson(name,words){
     if(!isAdmin)throw Error('Chỉ admin được đăng bài.');
@@ -549,38 +748,53 @@
     const result=await apiFetch('/rest/v1/kotoba_lessons?id=eq.'+encodeURIComponent(lesson.id),{method:'DELETE',admin:true});
     if(!Array.isArray(result)||!result.length)throw Error('Bài học không còn tồn tại.');
   }
-  function openLogin(){
-    if(!CLOUD_ENABLED)return toast('Hãy điền Supabase URL và publishable key trong config.js trước.','error');
-    openModal('Đăng nhập quản trị',`<div class="login-form"><p class="lead">Người học không cần tài khoản. Chỉ quản trị viên mới đăng nhập để đăng, sửa hoặc ẩn bài học.</p><div class="field"><label for="login-email">Email admin</label><input id="login-email" type="email" autocomplete="username" placeholder="admin@example.com"></div><div class="field"><label for="login-password">Mật khẩu</label><input id="login-password" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu"></div><div class="modal-actions">${button('Hủy','closeModal','ghost')}${button('Đăng nhập','loginSubmit')}</div></div>`,'Xác thực bằng Supabase Auth');
+  function openAuthPanel(panel='login'){
+    if(!CLOUD_ENABLED)return toast('Hệ thống chưa được cấu hình tài khoản.','error');
+    const tabs=`<div class="auth-tabs">${button('Đăng nhập','authLogin',panel==='login'?'primary small':'ghost small')}${button('Đăng ký','authRegister',panel==='register'?'primary small':'ghost small')}${button('Quên mật khẩu','authForgot',panel==='forgot'?'primary small':'ghost small')}</div>`;
+    let fields='';
+    if(panel==='login')fields=`<div class="field"><label for="login-email">Email</label><input id="login-email" type="email" autocomplete="username" placeholder="email@example.com"></div><div class="field"><label for="login-password">Mật khẩu</label><input id="login-password" type="password" autocomplete="current-password"></div><div class="modal-actions">${button('Đăng nhập','loginSubmit')}</div>`;
+    else if(panel==='register')fields=`<div class="field"><label for="register-email">Email</label><input id="register-email" type="email" autocomplete="email" placeholder="email@example.com"></div><div class="field"><label for="register-password">Mật khẩu (tối thiểu 8 ký tự)</label><input id="register-password" type="password" autocomplete="new-password"></div><div class="field"><label for="register-confirm">Nhập lại mật khẩu</label><input id="register-confirm" type="password" autocomplete="new-password"></div><div class="modal-actions">${button('Tạo tài khoản','registerSubmit')}</div>`;
+    else fields=`<p class="account-note">Nhập email đăng ký để nhận liên kết đặt lại mật khẩu.</p><div class="field"><label for="forgot-email">Email</label><input id="forgot-email" type="email" autocomplete="email" placeholder="email@example.com"></div><div class="modal-actions">${button('Gửi liên kết','forgotSubmit')}</div>`;
+    openModal(panel==='login'?'Đăng nhập':panel==='register'?'Tạo tài khoản':'Quên mật khẩu',`<div class="login-form">${tabs}${fields}</div>`,'Lưu tiến độ học của riêng bạn trên nhiều thiết bị');
   }
-  function toast(message,kind='ok') { const el=document.createElement('div'); el.className='toast'+(kind==='error'?' error':''); el.textContent=message; $('#toast-root').append(el); setTimeout(()=>el.remove(),4500); }
+  function openLogin(){openAuthPanel('login');}
+  function openResetDialog(){
+    openModal('Đặt lại mật khẩu',`<div class="field"><label for="reset-password">Mật khẩu mới (tối thiểu 8 ký tự)</label><input id="reset-password" type="password" autocomplete="new-password"></div><div class="field"><label for="reset-confirm">Nhập lại mật khẩu mới</label><input id="reset-confirm" type="password" autocomplete="new-password"></div><div class="modal-actions">${button('Cập nhật mật khẩu','resetSubmit')}</div>`);
+  }
+  function openAccount(){
+    if(!adminSession?.user)return openLogin();
+    const guest=getLocalProgress(PROGRESS_KEY);
+    const hasGuest=!!(guest&&(Object.keys(guest.activity||{}).length||Number(guest.stats?.total)));
+    openModal('Tài khoản của tôi',`<div class="account-details"><div class="eyebrow">ĐANG ĐĂNG NHẬP</div><strong>${esc(adminSession.user.email||'Tài khoản học tập')}</strong><p class="account-note">${isAdmin?'Quyền quản trị · Có thể mở mục Quản lý đề.':'Người học · Tiến độ cá nhân được đồng bộ khi có kết nối.'}</p></div><p class="account-note">${esc(progressNotice||'Thời gian học, số từ theo ngày và câu sai được lưu theo tài khoản.')}</p><div class="profile-actions">${button(icon('rotate')+' Lưu tiến độ','syncProgressNow','secondary small')}${hasGuest&&!localStorage.getItem(GUEST_IMPORTED_KEY)?button(icon('upload')+' Chuyển tiến độ khách','importGuest','ghost small'):''}${button('Đăng xuất','logout','ghost small')}</div>`);
+  }
+  function toast(message,kind='ok') { const el=document.createElement('div'); el.className='toast'+(kind==='error'?' error':''); el.textContent=String(message).replace(/supabase/gi,'máy chủ').replace(/\bRLS\b/gi,'phân quyền'); $('#toast-root').append(el); setTimeout(()=>el.remove(),4500); }
   const getLesson = (lessonId=data.activeLessonId) => data.lessons.find(l=>l.id===lessonId);
   const allMistakes = () => Object.entries(data.mistakes).flatMap(([lessonId,recs])=>Object.entries(recs||{}).map(([key,record])=>({lessonId,key,...record})));
   function eligibleWords(lesson,mode) { const m=MODE[mode]; if(!lesson||!m) return []; const words=lesson.words.filter(w=>String(w[m.source]||'').trim()&&String(w[m.answer]||'').trim()); const answers = new Set(words.map(w=>standard(w[m.answer]))); return answers.size>=4 ? words : []; }
   function modesSummary(lesson) {return Object.keys(MODE).filter(m=>eligibleWords(lesson,m).length).length;}
   function shuffle(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
-  const navTitle = {home:'Tổng quan',practice:'Luyện tập',library:'Kho bài học',mistakes:'Ôn tập lỗi',stats:'Thống kê học tập'};
-  function setView(next) { const leavingQuiz=!!quiz&&view==='practice'&&next!=='practice';flushStudyClock();if(leavingQuiz)save();view=next; if(next!=='practice')quiz=null; closeModal(); render(); window.scrollTo({top:0,behavior:'instant'}); }
-  function render() { $('#breadcrumb').textContent=navTitle[view]; document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===view)); $('#content').innerHTML=({home:renderHome,practice:renderPractice,library:renderLibrary,mistakes:renderMistakes,stats:renderStats}[view]||renderHome)(); updateHeader(); }
+  const navTitle = {home:'Tổng quan',practice:'Luyện tập',library:'Kho bài học',mistakes:'Ôn tập lỗi',stats:'Thống kê học tập',manage:'Quản lý đề'};
+  function setView(next) { if(next==='manage'&&!isAdmin)return toast('Bạn không có quyền quản lý đề.','error'); const leavingQuiz=!!quiz&&view==='practice'&&next!=='practice';flushStudyClock();if(leavingQuiz)save();view=next; if(next!=='practice')quiz=null; closeModal(); render(); window.scrollTo({top:0,behavior:'instant'}); }
+  function render() { $('#breadcrumb').textContent=navTitle[view]; document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===view)); $('#content').innerHTML=({home:renderHome,practice:renderPractice,library:renderLibrary,mistakes:renderMistakes,stats:renderStats,manage:renderManage}[view]||renderHome)(); updateHeader(); }
   const button=(caption,action,variant='primary',extra='')=>`<button class="btn ${variant}" ${extra} data-action="${action}">${caption}</button>`;
   function lessonCard(l) { const viable=modesSummary(l),wrongCount=Object.keys(data.mistakes[l.id]||{}).length; return `<article class="lesson-card">
-    <div class="lesson-card-top"><span class="lesson-chip ${l.published===false?'hidden':l.isDemo?'demo':''}">${l.published===false?'BÀI ĐANG ẨN':l.isDemo?'BÀI MẪU':CLOUD_ENABLED?'BÀI CÔNG KHAI':'BÀI TRÊN MÁY'}</span><span class="lesson-art">${esc(l.words[0]?.kanji||'あ')}</span></div>
+    <div class="lesson-card-top"><span class="lesson-chip ${l.published===false?'hidden':l.isDemo?'demo':''}">${l.published===false?'BÀI ĐANG ẨN':l.isDemo?'BÀI MẪU':CLOUD_ENABLED?'BÀI HỌC':'BÀI MẪU'}</span><span class="lesson-art">${esc(l.words[0]?.kanji||'あ')}</span></div>
     <h3>${esc(l.name)}</h3><div class="lesson-meta">${l.words.length} từ vựng · ${viable}/3 kiểu luyện${wrongCount?' · '+wrongCount+' cần ôn':''}</div>
-    <div class="lesson-bottom">${button(icon('arrow')+' Học ngay','learn','primary small',`data-id="${esc(l.id)}" ${viable?'':'disabled'}`)}${(!CLOUD_ENABLED||isAdmin)?`<button class="btn ghost small" data-action="editLesson" data-id="${esc(l.id)}">${icon('edit')} Sửa bài</button>`:button('Xem từ','inspectLesson','ghost small',`data-id="${esc(l.id)}"`)}</div></article>`; }
+    <div class="lesson-bottom">${button(icon('arrow')+' Học ngay','learn','primary small',`data-id="${esc(l.id)}" ${viable?'':'disabled'}`)}${button('Xem từ','inspectLesson','ghost small',`data-id="${esc(l.id)}"`)}</div></article>`; }
   function renderHome() { const nWords=data.lessons.reduce((sum,l)=>sum+l.words.length,0);const s=data.stats;const accuracy=s.total?Math.round(s.correct/s.total*100):0;const pending=allMistakes().length;const today=readDay(dayKey());
-    return `<section class="hero"><div><div class="eyebrow">ようこそ • WELCOME BACK</div><h1>Tiếng Nhật dễ hơn,<br>khi học đúng cách.</h1><p class="lead">Luyện trắc nghiệm 3 chế độ từ kho bài học chung. Admin đăng một lần, mọi người đều được học.</p><div class="hero-actions">${button(icon('spark')+' Bắt đầu luyện tập','toPractice')}${button(icon('layers')+' Xem kho bài','toLibrary','secondary')}</div></div><div class="hero-art" aria-hidden="true"><div class="hero-sun">学</div><div class="hero-vertical">日本語を楽しく学ぶ</div><div class="hero-decor"></div></div></section>
-    <div class="section-head"><div><h2>Hôm nay · ${displayDate(dayKey())}</h2><p>Ghi nhận khi bạn luyện trắc nghiệm trên thiết bị này.</p></div>${button(icon('calendar')+' Xem lịch sử','toStats','ghost small')}</div>
+    return `<section class="hero"><div><div class="eyebrow">ようこそ • WELCOME BACK</div><h1>Tiếng Nhật dễ hơn,<br>khi học đúng cách.</h1><p class="lead">Luyện trắc nghiệm 3 chế độ từ kho bài học chung. Bài học được cập nhật tự động, tiến độ được lưu khi đăng nhập.</p><div class="hero-actions">${button(icon('spark')+' Bắt đầu luyện tập','toPractice')}${button(icon('layers')+' Xem kho bài','toLibrary','secondary')}</div></div><div class="hero-art" aria-hidden="true"><div class="hero-sun">学</div><div class="hero-vertical">日本語を楽しく学ぶ</div><div class="hero-decor"></div></div></section>
+    <div class="section-head"><div><h2>Hôm nay · ${displayDate(dayKey())}</h2><p>Ghi nhận khi bạn luyện trắc nghiệm; đăng nhập để đồng bộ giữa các thiết bị.</p></div>${button(icon('calendar')+' Xem lịch sử','toStats','ghost small')}</div>
     <div class="stats-grid" style="margin-top:0">${stat('Thời gian học',displayTime(today.durationMs),'clock','Chỉ tính khi đang luyện')}${stat('Từ đã luyện',today.wordIds.length,'book','Không tính từ trùng')}${stat('Lượt trả lời',today.answered,'target',today.correct+' lượt đúng')}${stat('Buổi hoàn thành',today.sessions,'check','Tổng của riêng hôm nay')}</div>
     <div class="section-head"><div><h2>Tiến độ tổng thể</h2><p>Từ tất cả các buổi học của bạn.</p></div></div>
     <div class="stats-grid" style="margin-top:0">${stat('Tổng số từ',nWords,'file','Trong '+data.lessons.length+' bài học')}${stat('Câu đã làm',s.total,'book','Tổng lượt trả lời')}${stat('Độ chính xác',accuracy+'%','target','Tính trên tất cả câu')}${stat('Cần ôn lại',pending,'repeat','Các từ trả lời sai')}</div>
-    <div class="section-head"><div><h2>${CLOUD_ENABLED?'Bài học trên hệ thống':'Bài học trên máy'}</h2><p>Chọn một bài để bắt đầu ngay.</p></div>${(isAdmin||!CLOUD_ENABLED)?button(icon('plus')+' Thêm bài','toLibrary','ghost small'):button(icon('layers')+' Tất cả bài','toLibrary','ghost small')}</div>
-    <div class="lesson-grid">${data.lessons.length?data.lessons.slice(0,6).map(lessonCard).join(''):`<div class="empty-card"><div class="big">語</div><h3>Chưa có bài học</h3><p>${CLOUD_ENABLED?'Admin chưa đăng bài nào hoặc dữ liệu chưa tải được.':'Tải file từ vựng lên để bắt đầu.'}</p>${button('Mở kho bài','toLibrary')}</div>`}</div>`; }
+    <div class="section-head"><div><h2>${CLOUD_ENABLED?'Bài học trên hệ thống':'Bài học trên máy'}</h2><p>Chọn một bài để bắt đầu ngay.</p></div>${button(icon('layers')+' Tất cả bài','toLibrary','ghost small')}</div>
+    <div class="lesson-grid">${data.lessons.length?data.lessons.slice(0,6).map(lessonCard).join(''):`<div class="empty-card"><div class="big">語</div><h3>Chưa có bài học</h3><p>${CLOUD_ENABLED?'Kho bài đang trống hoặc dữ liệu chưa tải xong.':'Kho bài dùng thử đang trống.'}</p>${button('Mở kho bài','toLibrary')}</div>`}</div>`; }
   function stat(name,val,ico,foot) {return `<div class="stat-card"><div class="stat-top">${esc(name)}<div class="stat-icon">${icon(ico)}</div></div><div class="stat-value">${esc(val)}</div><div class="stat-foot">${esc(foot)}</div></div>`;}
   function renderPractice() {if(quiz) return quiz.done?renderResult():renderQuestion();
     const l=getLesson();const lessonOptions=data.lessons.map(x=>`<option value="${esc(x.id)}" ${l?.id===x.id?'selected':''}>${esc(x.name)} (${x.words.length} từ)</option>`).join('');
     const mode = MODE[data.preferences.mode] ? data.preferences.mode : 'hira_vi';
     return `<section class="page-heading"><div><div class="eyebrow">PRACTICE MODE</div><h1>Khởi động buổi học</h1><p>Chọn bài và hình thức trắc nghiệm bạn muốn luyện.</p></div></section>
-      ${!data.lessons.length?`<div class="empty-card"><div class="big">本</div><h3>Chưa có bài học nào</h3><p>Hãy tải bài học lên để tạo câu hỏi.</p>${button('Tải bài học lên','toLibrary')}</div>`:
+      ${!data.lessons.length?`<div class="empty-card"><div class="big">本</div><h3>Chưa có bài học nào</h3><p>Bài học sẽ xuất hiện khi được đăng lên kho chung.</p>${button('Tải bài học lên','toLibrary')}</div>`:
       `<div class="panel"><div class="panel-heading"><div><h2>Cấu hình bài luyện</h2><p class="lead">Các đáp án nhiễu được lấy từ chính bài học đã chọn.</p></div></div>
       <div class="field"><label for="practice-lesson">Bài học</label><select id="practice-lesson">${lessonOptions}</select></div>
       <div class="section-head"><div><h3>Chọn kiểu câu hỏi</h3><p>3 chế độ luyện tập</p></div></div>
@@ -602,23 +816,27 @@
   function nextQuestion() {if(!quiz||quiz.paused)return;flushStudyClock();quiz.lastActionAt=Date.now();const q=quiz.questions[quiz.index];if(q.selected===null)return;if(quiz.index<quiz.questions.length-1)quiz.index++;else{quiz.done=true;dayRow(dayKey()).sessions++;data.stats.history=Array.isArray(data.stats.history)?data.stats.history:[];data.stats.history.unshift({at:new Date().toISOString(),lessonId:quiz.lessonId,mode:quiz.mode,total:quiz.questions.length,correct:quiz.correctCount,durationMs:quiz.durationMs});data.stats.history=data.stats.history.slice(0,30);save();}render();}
   function renderResult() {const n=quiz.questions.length,percent=Math.round(quiz.correctCount/n*100),wrong=quiz.wrong;return `<div class="quiz-shell"><div class="result-head"><div class="eyebrow">BUỔI HỌC HOÀN THÀNH</div><div class="result-ring" style="--percent:${percent}"><span class="value">${percent}%</span></div><h1>${percent===100?'Xuất sắc!':percent>=75?'Làm tốt lắm!':'Tiếp tục luyện nhé!'}</h1><p>Bạn trả lời đúng <b>${quiz.correctCount}/${n}</b> câu · Sai ${n-quiz.correctCount} câu</p><p>Thời gian học: <b>${displayTime(quiz.durationMs||0)}</b> · <b>${new Set(quiz.questions.map(q=>q.word.id)).size}</b> từ đã luyện</p><div class="result-actions">${button(icon('rotate')+' Luyện lại','redoQuiz')}${wrong.length?button(icon('repeat')+' Ôn '+wrong.length+' câu sai','reviewResultWrong','secondary'):''}${button(icon('back')+' Đổi bài','exitQuiz','ghost')}</div></div>
     ${wrong.length?`<div class="panel"><h2>Những câu bạn cần ôn</h2><p class="lead">Khi trả lời đúng ở lần luyện sau, từ này sẽ tự rời danh sách cần ôn.</p><div style="margin-top:15px">${wrong.map(x=>`<div class="wrong-row"><div><span class="label-small">TỪ VỰNG</span><strong>${esc(x.word.kanji||'—')} · ${esc(x.word.hira||'—')}</strong></div><div><span class="label-small">BẠN ĐÃ CHỌN</span><strong class="badtext">${esc(x.selected)}</strong></div><div><span class="label-small">ĐÁP ÁN ĐÚNG</span><strong class="goodtext">${esc(x.correct)}</strong></div></div>`).join('')}</div></div>`:`<div class="empty-card"><div class="big">満</div><h3>Không có câu sai nào!</h3><p>Bạn đã hoàn thành trọn vẹn bài luyện này.</p></div>`}</div>`; }
-  function renderLibrary() {
-    const canManage=!CLOUD_ENABLED||isAdmin;
+  function renderLibrary(management=false) {
+    const canManage=management&&isAdmin;
     const localRaw=(()=>{try{const j=JSON.parse(localStorage.getItem(STORAGE)||'null');return Array.isArray(j?.lessons)?j.lessons.filter(l=>!l.isDemo):[];}catch{return [];}})();
     const statusInfo=!CLOUD_ENABLED
-      ? `<div class="notice warn"><strong>Chưa bật đồng bộ.</strong> Đây là chế độ xem thử lưu trên máy. Để đăng bài cho mọi người, hãy chạy <code>supabase.sql</code> rồi điền <code>config.js</code> theo README.</div>`
+      ? `<div class="notice warn"><strong>Chế độ xem thử.</strong> Dữ liệu đang lưu trên máy, chức năng tài khoản chưa khả dụng.</div>`
       : cloudError
         ? `<div class="notice error"><strong>Đồng bộ gặp lỗi:</strong> ${esc(cloudError)}. Đang hiển thị dữ liệu công khai đã lưu gần nhất (nếu có). ${button('Thử lại','syncNow','ghost small')}</div>`
-        : `<div class="notice"><strong>${isAdmin?'Chế độ quản trị':'Kho bài học chung'}.</strong> ${isAdmin?'Bạn có quyền đăng, sửa, ẩn và xóa bài. Mọi thay đổi được lưu trên Supabase.':'Chỉ admin đăng đề; khách có thể học mà không cần đăng nhập.'} ${cloudSyncedAt?'Cập nhật lúc '+new Date(cloudSyncedAt).toLocaleTimeString('vi-VN')+'.':''}</div>`;
-    const adminPanel=`<div class="library-layout"><div class="panel"><div class="panel-heading"><div><h2>Thêm bài học mới</h2><p class="lead">${CLOUD_ENABLED?'Đăng trực tiếp lên Supabase để tất cả người học thấy đề.':'Chế độ demo: chỉ lưu trên trình duyệt hiện tại.'}</p></div></div><div id="drop-zone" class="upload-zone" tabindex="0" role="button" aria-label="Chọn file từ vựng để tải lên"><div class="upload-icon">${icon('upload')}</div><strong>Kéo thả file vào đây hoặc chọn file</strong><p>Có thể chọn nhiều file, mỗi file tạo thành 1 bài học</p><button type="button" class="btn primary small" data-action="pickFiles">${icon('plus')} Chọn file từ máy</button><div class="ext">.CSV · .XLSX · .JSON · .TXT · .TSV</div></div>
+        : `<div class="notice"><strong>${canManage?'Chế độ quản lý':'Kho bài học chung'}.</strong> ${canManage?'Bạn có thể đăng, sửa, ẩn và xóa bài; thay đổi áp dụng cho tất cả người học.':'Chọn bài và bắt đầu luyện tập ngay.'} ${cloudSyncedAt?'Cập nhật lúc '+new Date(cloudSyncedAt).toLocaleTimeString('vi-VN')+'.':''}</div>`;
+    const adminPanel=`<div class="library-layout"><div class="panel"><div class="panel-heading"><div><h2>Thêm bài học mới</h2><p class="lead">${CLOUD_ENABLED?'Đăng lên kho bài chung để tất cả người học thấy đề.':'Chế độ demo: chỉ lưu trên trình duyệt hiện tại.'}</p></div></div><div id="drop-zone" class="upload-zone" tabindex="0" role="button" aria-label="Chọn file từ vựng để tải lên"><div class="upload-icon">${icon('upload')}</div><strong>Kéo thả file vào đây hoặc chọn file</strong><p>Có thể chọn nhiều file, mỗi file tạo thành 1 bài học</p><button type="button" class="btn primary small" data-action="pickFiles">${icon('plus')} Chọn file từ máy</button><div class="ext">.CSV · .XLSX · .JSON · .TXT · .TSV</div></div>
       <details class="paste-details" id="paste-panel"><summary>Hoặc dán từ vựng để tạo bài nhanh</summary><div class="field"><label for="paste-name">Tên bài học</label><input type="text" id="paste-name" placeholder="Ví dụ: Bài 1 — Gia đình" maxlength="100"></div><div class="field"><label for="paste-words">Danh sách từ (mỗi dòng 1 từ)</label><textarea id="paste-words" spellcheck="false" placeholder="学校 | がっこう | Trường học&#10;先生 | せんせい | Giáo viên&#10;学生 | がくせい | Học sinh"></textarea></div><div class="paste-actions">${button(icon('plus')+' Lưu bài học','addPasted')}${button('Điền dữ liệu mẫu','fillPaste','ghost')}</div></details>
       </div><div class="formats"><h3>Định dạng dữ liệu</h3><p>Nhập 3 cột theo thứ tự: <code>kanji</code>, <code>hira</code>, <code>vi</code>. Với từ không có Hán tự, để trống cột kanji.</p><div class="format-pre">kanji,hira,vi\n学校,がっこう,Trường học\n先生,せんせい,Giáo viên\n友達,ともだち,Bạn bè</div><p>Hỗ trợ CSV, Excel XLSX, TXT <code>kanji | hira | vi</code>, TSV và JSON. Cần ít nhất 4 đáp án khác nhau trong bài cho mỗi kiểu luyện.</p><div class="backup-actions">${button(icon('download')+' CSV mẫu','downloadTemplate','secondary small')}${button(icon('download')+' JSON mẫu','downloadJsonTemplate','ghost small')}</div>
-      <div class="divider-line"></div><h3>Sao lưu và chuyển dữ liệu</h3><p>${CLOUD_ENABLED?'Thời gian học, thống kê ngày và lịch sử luyện tập lưu trên thiết bị; bài học trên Supabase. Xuất bản sao để giữ một bản chép đề và tiến độ. Khôi phục chỉ lấy tiến độ cá nhân, không ghi đè đề chung.':'Dữ liệu lưu trên trình duyệt máy này; có thể xuất bản sao.'}</p><div class="backup-actions">${button(icon('upload')+' Khôi phục tiến độ','importBackup','ghost small')}${CLOUD_ENABLED&&localRaw.length?button(icon('upload')+' Đưa '+localRaw.length+' bài V1 lên cloud','importV1','secondary small'):''}</div></div></div>`;
-    const guestPanel=`<div class="panel" style="margin-bottom:17px"><h2>Bạn đang học với quyền khách</h2><p class="lead" style="margin:8px 0 16px">Không cần đăng nhập để học bài công khai. Muốn đăng bài mới, admin hãy đăng nhập ở góc trên bên phải.</p>${button(icon('download')+' Tải CSV mẫu','downloadTemplate','ghost small')}</div>`;
-    return `<section class="page-heading"><div><div class="eyebrow">SHARED VOCABULARY LIBRARY</div><h1>Kho bài học</h1><p>${CLOUD_ENABLED?'Danh sách đề học dùng chung cho mọi thiết bị.':'Chế độ dùng thử chưa đồng bộ.'}</p></div><div class="toolbar">${button(icon('rotate')+' Đồng bộ đề','syncNow','secondary small',CLOUD_ENABLED?'':'disabled title="Chưa kết nối Supabase"')}${button(icon('download')+' Xuất bản sao','exportBackup','ghost small')}</div></section>
+      <div class="divider-line"></div><h3>Sao lưu và chuyển dữ liệu</h3><p>${CLOUD_ENABLED?'Tiến độ học theo tài khoản sẽ đồng bộ khi đăng nhập; kho bài dùng chung. Xuất bản sao tiến độ cá nhân; bản sao không chứa kho bài học chung. Khôi phục không ghi đè đề.':'Dữ liệu lưu trên trình duyệt máy này; có thể xuất bản sao.'}</p><div class="backup-actions">${button(icon('upload')+' Khôi phục tiến độ','importBackup','ghost small')}${CLOUD_ENABLED&&localRaw.length?button(icon('upload')+' Đưa '+localRaw.length+' bài V1 lên cloud','importV1','secondary small'):''}</div></div></div>`;
+    const guestPanel=`<div class="notice">${adminSession?.user?.id?'Bạn đang xem các bài học được chia sẻ.':'Bạn có thể học ngay mà không cần đăng nhập. Đăng ký để lưu tiến độ trên nhiều thiết bị.'}</div>`;
+    return `<section class="page-heading"><div><div class="eyebrow">SHARED VOCABULARY LIBRARY</div><h1>${management?'Quản lý đề':'Kho bài học'}</h1><p>${CLOUD_ENABLED?'Danh sách đề học dùng chung cho mọi thiết bị.':'Chế độ dùng thử chưa đồng bộ.'}</p></div><div class="toolbar">${button(icon('rotate')+' Đồng bộ đề','syncNow','secondary small',CLOUD_ENABLED?'':'disabled title="Chưa bật đồng bộ"')}${button(icon('download')+' Sao lưu tiến độ','exportBackup','ghost small')}</div></section>
       ${statusInfo}${canManage?adminPanel:guestPanel}
-      <div class="section-head"><div><h2>${CLOUD_ENABLED?'Bài học trên hệ thống':'Các bài đã lưu'} (${data.lessons.length})</h2><p>${canManage?'Admin có thể sửa, ẩn, xóa hoặc tải CSV.':'Chọn học hoặc xem từ vựng. Kho tự đồng bộ định kỳ.'}</p></div></div>
-      <div class="library-list">${data.lessons.length?data.lessons.map(l=>`<div class="library-item"><div class="library-item-info"><strong>${esc(l.name)} ${l.published===false?'<span class="lesson-chip hidden">ĐÃ ẨN</span>':''}</strong><span>${l.words.length} từ · ${modesSummary(l)}/3 chế độ · Tạo ${fmtDate(l.createdAt)}</span></div><div class="library-actions">${button('Học','learn','primary small',`data-id="${esc(l.id)}" ${modesSummary(l)?'':'disabled'}`)}<button class="btn ghost small icon-only" aria-label="Xem bài ${esc(l.name)}" data-action="inspectLesson" data-id="${esc(l.id)}" title="Xem bài">${icon('file')}</button>${canManage?`<button class="btn ghost small icon-only" aria-label="Sửa bài ${esc(l.name)}" data-action="editLesson" data-id="${esc(l.id)}" title="Sửa bài">${icon('edit')}</button>`:''}<button class="btn ghost small icon-only" aria-label="Tải bài ${esc(l.name)}" data-action="exportLesson" data-id="${esc(l.id)}" title="Xuất CSV">${icon('download')}</button>${canManage?`${CLOUD_ENABLED?button(l.published===false?'Công khai':'Ẩn bài','togglePublish','ghost small',`data-id="${esc(l.id)}"`):''}<button class="btn ghost small icon-only" aria-label="Xóa bài ${esc(l.name)}" data-action="deleteLesson" data-id="${esc(l.id)}" title="Xóa bài">${icon('trash')}</button>`:''}</div></div>`).join(''):`<div class="empty-card"><div class="big">本</div><h3>Kho chưa có bài học</h3><p>${CLOUD_ENABLED?'Admin hãy đăng bài đầu tiên.':'Tải lên bài đầu tiên ở ô phía trên.'}</p></div>`}</div>`;
+      <div class="section-head"><div><h2>${CLOUD_ENABLED?'Bài học trên hệ thống':'Các bài đã lưu'} (${data.lessons.length})</h2><p>${canManage?'Bạn có thể sửa, ẩn và xóa đề.':'Chọn học hoặc xem từ vựng. Kho tự cập nhật định kỳ.'}</p></div></div>
+      <div class="library-list">${data.lessons.length?data.lessons.map(l=>`<div class="library-item"><div class="library-item-info"><strong>${esc(l.name)} ${l.published===false?'<span class="lesson-chip hidden">ĐÃ ẨN</span>':''}</strong><span>${l.words.length} từ · ${modesSummary(l)}/3 chế độ · Tạo ${fmtDate(l.createdAt)}</span></div><div class="library-actions">${button('Học','learn','primary small',`data-id="${esc(l.id)}" ${modesSummary(l)?'':'disabled'}`)}<button class="btn ghost small icon-only" aria-label="Xem bài ${esc(l.name)}" data-action="inspectLesson" data-id="${esc(l.id)}" title="Xem bài">${icon('file')}</button>${canManage?`<button class="btn ghost small icon-only" aria-label="Sửa bài ${esc(l.name)}" data-action="editLesson" data-id="${esc(l.id)}" title="Sửa bài">${icon('edit')}</button>`:''}${canManage?`<button class="btn ghost small icon-only" aria-label="Tải bài ${esc(l.name)}" data-action="exportLesson" data-id="${esc(l.id)}" title="Xuất CSV">${icon('download')}</button>`:''}${canManage?`${CLOUD_ENABLED?button(l.published===false?'Công khai':'Ẩn bài','togglePublish','ghost small',`data-id="${esc(l.id)}"`):''}<button class="btn ghost small icon-only" aria-label="Xóa bài ${esc(l.name)}" data-action="deleteLesson" data-id="${esc(l.id)}" title="Xóa bài">${icon('trash')}</button>`:''}</div></div>`).join(''):`<div class="empty-card"><div class="big">本</div><h3>Kho chưa có bài học</h3><p>${CLOUD_ENABLED?'Kho bài hiện chưa có nội dung.':'Kho bài dùng thử đang trống.'}</p></div>`}</div>`;
+  }
+  function renderManage(){
+    if(!isAdmin)return '<div class="empty-card"><h3>Bạn không có quyền quản lý đề.</h3></div>';
+    return renderLibrary(true);
   }
   function renderStats(){
     const today=readDay(dayKey()),days14=Array.from({length:14},(_,i)=>pastDay(i));
@@ -629,7 +847,7 @@
     const sevenWords=new Set(past7.flatMap(d=>d.wordIds));
     return `<section class="page-heading"><div><div class="eyebrow">LEARNING JOURNAL</div><h1>Thống kê học tập</h1><p>Theo dõi thời gian học và số từ đã luyện theo từng ngày.</p></div>
       <div class="toolbar">${button(icon('download')+' Xuất thống kê CSV','exportDailyCsv','secondary small')}</div></section>
-      <div class="notice"><strong>Cách tính:</strong> Đồng hồ chỉ chạy khi đang mở màn hình trắc nghiệm và tab đang hoạt động; tự tạm dừng sau 5 phút không thao tác. <strong>Số từ</strong> là số từ khác nhau đã trả lời trong ngày (không cộng lặp khi luyện lại hoặc đổi chế độ). Thống kê cá nhân lưu trên trình duyệt của thiết bị này.</div>
+      <div class="notice"><strong>Cách tính:</strong> Đồng hồ chỉ chạy khi đang mở màn hình trắc nghiệm và tab đang hoạt động; tự tạm dừng sau 5 phút không thao tác. <strong>Số từ</strong> là số từ khác nhau đã trả lời trong ngày (không cộng lặp khi luyện lại hoặc đổi chế độ). ${adminSession?.user?.id?'Thống kê được lưu theo tài khoản và đồng bộ khi có kết nối.':'Bạn đang học với chế độ khách: thống kê chỉ lưu trên thiết bị này.'}</div>
       <div class="section-head"><div><h2>Hôm nay · ${displayDate(dayKey())}</h2><p>Các con số cập nhật theo hoạt động thực tế.</p></div></div>
       <div class="stats-grid" style="margin-top:0">${stat('Thời gian',displayTime(today.durationMs),'clock','Đã ghi nhận hôm nay')}${stat('Số từ đã luyện',today.wordIds.length,'book','Từ khác nhau')}${stat('Số từ trả lời đúng',today.correctWordIds.length,'check','Từ khác nhau từng đúng')}${stat('Lượt trả lời',today.answered,'target',today.correct+' lượt đúng')}</div>
       <div class="section-head"><div><h2>7 ngày gần nhất</h2><p>Gồm cả hôm nay.</p></div></div>
@@ -652,7 +870,7 @@
   function templateCsv() {download('\uFEFF'+csvText([['kanji','hira','vi'],...DEFAULT]),'mau_tu_vung_nhat.csv','text/csv;charset=utf-8');}
   function templateJson() {download(JSON.stringify({name:'Mẫu bài học N5',words:DEFAULT.map(([kanji,hira,vi])=>({kanji,hira,vi}))},null,2),'mau_tu_vung_nhat.json','application/json;charset=utf-8');}
   function exportLesson(lesson) {download('\uFEFF'+csvText([['kanji','hira','vi'],...lesson.words.map(w=>[w.kanji,w.hira,w.vi])]),(lesson.name.replace(/[\\/:*?"<>|]/g,'_')||'bai_hoc')+'.csv','text/csv;charset=utf-8');}
-  function exportBackup() {download(JSON.stringify({format:CLOUD_ENABLED?'kotoba-lab-backup-v2':'kotoba-lab-backup-v1',exportedAt:new Date().toISOString(),data},null,2),'kotoba_lab_backup_'+new Date().toISOString().slice(0,10)+'.json','application/json;charset=utf-8');toast('Đã xuất bản sao toàn bộ dữ liệu.');}
+  function exportBackup() {download(JSON.stringify({format:CLOUD_ENABLED?'kotoba-lab-backup-v2':'kotoba-lab-backup-v1',exportedAt:new Date().toISOString(),data:CLOUD_ENABLED?{...data,lessons:[]}:data},null,2),'kotoba_lab_backup_'+new Date().toISOString().slice(0,10)+'.json','application/json;charset=utf-8');toast('Đã xuất bản sao toàn bộ dữ liệu.');}
   function splitDelimited(text,sep) {const rows=[];let row=[],cell='',inside=false;let s=text.replace(/^\uFEFF/,'');for(let i=0;i<s.length;i++){const c=s[i];if(c==='"'){if(inside&&s[i+1]==='"'){cell+='"';i++;}else inside=!inside;}else if(c===sep&&!inside){row.push(cell);cell='';}else if((c==='\r'||c==='\n')&&!inside){if(c==='\r'&&s[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x.trim()))rows.push(row);row=[];cell='';}else cell+=c;}if(inside)throw Error('File CSV có dấu ngoặc kép chưa đóng.');row.push(cell);if(row.some(x=>x.trim()))rows.push(row);return rows;}
   function detectSeparator(text) {const line=text.split(/\r?\n/).find(l=>l.trim())||'';let scores=[',','\t',';','|'].map(sep=>({sep,count:line.split(sep).length-1})).sort((a,b)=>b.count-a.count);return scores[0].count? scores[0].sep: '|';}
   function normalizeHeader(s) {return standard(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[_\s-]/g,'');}
@@ -668,18 +886,19 @@
   }
   function uniqueName(name){const original=String(name).trim().slice(0,100)||'Bài học mới';let n=original,i=2;while(data.lessons.some(l=>l.name.toLowerCase()===n.toLowerCase()))n=original+' ('+(i++)+')';return n;}
   async function addLesson(name,words){
+    if(!isAdmin)throw Error('Bạn không có quyền đăng bài.');
     if(!Array.isArray(words)||!words.length||words.length>5000)throw Error('Bài phải có 1–5000 từ.');
     const l=CLOUD_ENABLED?await cloudCreateLesson(name,words):{id:id(),name:uniqueName(name),isDemo:false,createdAt:new Date().toISOString(),words:makeWords(words)};
     data.lessons.unshift(l);data.activeLessonId=l.id;save();return l;
   }
-  async function importFiles(files){if(CLOUD_ENABLED&&!isAdmin)return toast('Chỉ admin được đăng bài.','error');let ok=0,errors=[];for(const f of [...files]){try{if(f.size>8*1024*1024)throw Error('File lớn hơn 8 MB.');const ext=f.name.split('.').pop().toLowerCase();if(!['csv','tsv','txt','json','xlsx'].includes(ext))throw Error('Định dạng chưa hỗ trợ.');let content;if(ext==='xlsx')content=await parseXLSX(f);else content=parseText(await f.text());const name=f.name.replace(/\.[^.]*$/,'');await addLesson(name,content);ok++;}catch(e){errors.push(f.name+': '+e.message);}}if(ok){toast('Đã đăng '+ok+' bài học'+(CLOUD_ENABLED?' lên hệ thống':' trên máy')+'.');setView('library');if(CLOUD_ENABLED)await syncLessons({silent:true});}if(errors.length)toast(errors.slice(0,3).join(' | ')+(errors.length>3?' ...':''),'error');}
+  async function importFiles(files){if(!isAdmin)return toast('Bạn không có quyền đăng bài.','error');let ok=0,errors=[];for(const f of [...files]){try{if(f.size>8*1024*1024)throw Error('File lớn hơn 8 MB.');const ext=f.name.split('.').pop().toLowerCase();if(!['csv','tsv','txt','json','xlsx'].includes(ext))throw Error('Định dạng chưa hỗ trợ.');let content;if(ext==='xlsx')content=await parseXLSX(f);else content=parseText(await f.text());const name=f.name.replace(/\.[^.]*$/,'');await addLesson(name,content);ok++;}catch(e){errors.push(f.name+': '+e.message);}}if(ok){toast('Đã đăng '+ok+' bài học'+(CLOUD_ENABLED?' lên hệ thống':' trên máy')+'.');setView(isAdmin?'manage':'library');if(CLOUD_ENABLED)await syncLessons({silent:true});}if(errors.length)toast(errors.slice(0,3).join(' | ')+(errors.length>3?' ...':''),'error');}
   function openModal(title,body,subtitle='') {closeModal();const root=$('#modal-root');root.innerHTML=`<div class="modal-overlay" id="modal-overlay"><div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-head"><div><h2>${esc(title)}</h2>${subtitle?`<p>${esc(subtitle)}</p>`:''}</div><button class="btn ghost small icon-only" data-action="closeModal" aria-label="Đóng">${icon('close')}</button></div>${body}</div></div>`;activeModal=title;}
   function closeModal(){const root=$('#modal-root');root.innerHTML='';activeModal=null;}
-  function inspectLesson(l){openModal(l.name,`<p class="lead">${l.words.length} từ vựng · ${modesSummary(l)} chế độ có thể luyện</p><div class="table-wrap" style="max-height:420px"><table><thead><tr><th>Hán tự</th><th>Hiragana</th><th>Tiếng Việt</th></tr></thead><tbody>${l.words.map(w=>`<tr><td>${esc(w.kanji||'—')}</td><td>${esc(w.hira||'—')}</td><td>${esc(w.vi||'—')}</td></tr>`).join('')}</tbody></table></div><div class="modal-actions">${(!CLOUD_ENABLED||isAdmin)?button('Sửa bài','editLesson','ghost',`data-id="${esc(l.id)}"`):''}${button(icon('arrow')+' Học bài này','learn','primary',`data-id="${esc(l.id)}"`)}</div>`,'Xem nội dung bài học');}
-  function editLesson(l){if(CLOUD_ENABLED&&!isAdmin)return toast('Chỉ admin được sửa bài.','error');openModal('Chỉnh sửa bài học',`<div class="field"><label for="edit-name">Tên bài học</label><input type="text" id="edit-name" value="${esc(l.name)}" maxlength="100" required></div><div class="field"><label for="edit-words">Từ vựng — 1 dòng / 1 từ, ngăn bằng dấu |</label><textarea id="edit-words" spellcheck="false" rows="12">${esc(l.words.map(w=>[w.kanji,w.hira,w.vi].join(' | ')).join('\n'))}</textarea></div><div class="helper">Sửa nội dung rồi lưu. Khi sửa danh sách, tiến độ ôn sai của bài này sẽ được đặt lại để tránh nhầm từ.</div><div class="modal-actions">${button('Hủy','closeModal','ghost')}${button(icon('check')+' Lưu thay đổi','saveEdited','primary',`data-id="${esc(l.id)}"`)}</div>`);}
+  function inspectLesson(l){openModal(l.name,`<p class="lead">${l.words.length} từ vựng · ${modesSummary(l)} chế độ có thể luyện</p><div class="table-wrap" style="max-height:420px"><table><thead><tr><th>Hán tự</th><th>Hiragana</th><th>Tiếng Việt</th></tr></thead><tbody>${l.words.map(w=>`<tr><td>${esc(w.kanji||'—')}</td><td>${esc(w.hira||'—')}</td><td>${esc(w.vi||'—')}</td></tr>`).join('')}</tbody></table></div><div class="modal-actions">${isAdmin?button('Sửa bài','editLesson','ghost',`data-id="${esc(l.id)}"`):''}${button(icon('arrow')+' Học bài này','learn','primary',`data-id="${esc(l.id)}"`)}</div>`,'Xem nội dung bài học');}
+  function editLesson(l){if(!isAdmin)return toast('Bạn không có quyền sửa bài.','error');openModal('Chỉnh sửa bài học',`<div class="field"><label for="edit-name">Tên bài học</label><input type="text" id="edit-name" value="${esc(l.name)}" maxlength="100" required></div><div class="field"><label for="edit-words">Từ vựng — 1 dòng / 1 từ, ngăn bằng dấu |</label><textarea id="edit-words" spellcheck="false" rows="12">${esc(l.words.map(w=>[w.kanji,w.hira,w.vi].join(' | ')).join('\n'))}</textarea></div><div class="helper">Sửa nội dung rồi lưu. Khi sửa danh sách, tiến độ ôn sai của bài này sẽ được đặt lại để tránh nhầm từ.</div><div class="modal-actions">${button('Hủy','closeModal','ghost')}${button(icon('check')+' Lưu thay đổi','saveEdited','primary',`data-id="${esc(l.id)}"`)}</div>`);}
   async function saveEdited(l){
     if(cloudBusy)return;
-    if(CLOUD_ENABLED&&!isAdmin)return toast('Chỉ admin được sửa bài.','error');
+    if(!isAdmin)return toast('Bạn không có quyền sửa bài.','error');
     const name=$('#edit-name')?.value.trim(),raw=$('#edit-words')?.value||'';
     if(!name)return toast('Vui lòng nhập tên bài.','error');
     let words;try{words=mapRows(splitDelimited(raw,'|'));}catch(e){return toast(e.message,'error');}
@@ -691,7 +910,7 @@
     } catch(e){toast('Không lưu được: '+e.message,'error');}
     finally{cloudBusy=false;}
   }
-  function deleteLesson(l){if(CLOUD_ENABLED&&!isAdmin)return toast('Chỉ admin được xóa bài.','error');openModal('Xóa bài học?',`<p class="lead">Bạn sắp xóa <b>${esc(l.name)}</b> cùng dữ liệu ôn sai của bài này. Thao tác không thể hoàn tác.</p><div class="modal-actions">${button('Hủy','closeModal','ghost')}${button(icon('trash')+' Xóa bài','confirmDelete','danger',`data-id="${esc(l.id)}"`)}</div>`);}
+  function deleteLesson(l){if(!isAdmin)return toast('Bạn không có quyền xóa bài.','error');openModal('Xóa bài học?',`<p class="lead">Bạn sắp xóa <b>${esc(l.name)}</b> cùng dữ liệu ôn sai của bài này. Thao tác không thể hoàn tác.</p><div class="modal-actions">${button('Hủy','closeModal','ghost')}${button(icon('trash')+' Xóa bài','confirmDelete','danger',`data-id="${esc(l.id)}"`)}</div>`);}
   function restoreBackup(json){if(!json||!['kotoba-lab-backup-v1','kotoba-lab-backup-v2'].includes(json.format)||!json.data||!Array.isArray(json.data.lessons))throw Error('Đây không phải bản sao KOTOBA LAB hợp lệ.');const payload=json.data;if(payload.lessons.length>250)throw Error('Bản sao có quá nhiều bài học.');for(const l of payload.lessons){if(!l||typeof l.name!=='string'||!Array.isArray(l.words)||l.words.length>5000)throw Error('Một số bài học có cấu trúc không hợp lệ.');for(const w of l.words){if(!w||typeof w.id!=='string'||!['kanji','hira','vi'].every(x=>typeof w[x]==='string'))throw Error('Dữ liệu từ vựng không hợp lệ.');}}const clean={activity:sanitizeActivity(payload.activity),lessons:payload.lessons,mistakes:payload.mistakes&&typeof payload.mistakes==='object'?payload.mistakes:{},stats:{total:0,correct:0,streak:0,bestStreak:0,history:[],...(payload.stats||{})},preferences:{mode:'hira_vi',count:'all',...(payload.preferences||{})},activeLessonId:payload.activeLessonId||payload.lessons[0]?.id||null};if(CLOUD_ENABLED){data.activity=clean.activity;data.mistakes=clean.mistakes;data.stats=clean.stats;data.preferences=clean.preferences;data.activeLessonId=data.lessons.some(l=>l.id===clean.activeLessonId)?clean.activeLessonId:data.lessons[0]?.id||null;toast('Đã khôi phục tiến độ cá nhân. Kho đề chung không bị thay đổi.');}else{data=clean;toast('Đã khôi phục dữ liệu từ bản sao.');}save();setView('library');}
   document.addEventListener('click',async e=>{const nav=e.target.closest('[data-nav]');if(nav){setView(nav.dataset.nav);return;}const target=e.target.closest('[data-action]');if(!target)return;const action=target.dataset.action,lesson=getLesson(target.dataset.id);switch(action){
     case 'toPractice':setView('practice');break;
@@ -707,17 +926,26 @@
     case 'exitQuiz':flushStudyClock();save();quiz=null;setView('practice');break;
     case 'redoQuiz':{const l=quiz?.lessonId,m=quiz?.mode;beginQuiz({lessonId:l,mode:m});break;}
     case 'reviewResultWrong':{const ids=quiz?.wrong.map(w=>w.word.id);const l=quiz?.lessonId,m=quiz?.mode;beginQuiz({lessonId:l,mode:m,wordIds:ids});break;}
-    case 'pickFiles':if(!CLOUD_ENABLED||isAdmin)$('#file-picker').click();else toast('Chỉ admin được đăng bài.','error');break;
+    case 'pickFiles':if(isAdmin)$('#file-picker').click();else toast('Bạn không có quyền đăng bài.','error');break;
     case 'downloadTemplate':templateCsv();break;
     case 'downloadJsonTemplate':templateJson();break;
-    case 'exportLesson':if(lesson)exportLesson(lesson);break;
+    case 'exportLesson':if(lesson&&isAdmin)exportLesson(lesson);break;
     case 'exportBackup':exportBackup();break;
     case 'importBackup':$('#backup-picker').click();break;
+    case 'authLogin':openAuthPanel('login');break;
+    case 'authRegister':openAuthPanel('register');break;
+    case 'authForgot':openAuthPanel('forgot');break;
+    case 'registerSubmit':await signUp();break;
+    case 'forgotSubmit':await forgotPassword();break;
+    case 'resetSubmit':await resetPassword();break;
+    case 'openAccount':openAccount();break;
+    case 'syncProgressNow':if(progressDirty)await flushRemoteProgress();else await refreshUserProgress();toast(progressDirty?'Đã lưu trên máy; đồng bộ đang chờ kết nối.':'Đã cập nhật tiến độ.');break;
+    case 'importGuest':await importGuestProgress();break;
     case 'inspectLesson':if(lesson)inspectLesson(lesson);break;
     case 'editLesson':if(lesson)editLesson(lesson);break;
     case 'saveEdited':if(lesson)await saveEdited(lesson);break;
     case 'deleteLesson':if(lesson)deleteLesson(lesson);break;
-    case 'confirmDelete':if(lesson){
+    case 'confirmDelete':if(lesson&&isAdmin){
       if(cloudBusy)break;
       cloudBusy=true;
       try{
@@ -753,37 +981,37 @@
     }
     case 'closeModal':closeModal();break;
     case 'fillPaste':$('#paste-name').value='Bài từ vựng mẫu';$('#paste-words').value=DEFAULT.map(x=>x.join(' | ')).join('\n');break;
-    case 'addPasted':{const title=$('#paste-name')?.value.trim(),raw=$('#paste-words')?.value;if(!title)return toast('Hãy nhập tên bài học.','error');try{const words=parseText(raw);await addLesson(title,words);setView('library');toast('Đã đăng bài học mới.');if(CLOUD_ENABLED)await syncLessons({silent:true});}catch(e){toast(e.message,'error');}break;}
+    case 'addPasted':{if(!isAdmin){toast('Bạn không có quyền đăng bài.','error');break;}const title=$('#paste-name')?.value.trim(),raw=$('#paste-words')?.value;if(!title)return toast('Hãy nhập tên bài học.','error');try{const words=parseText(raw);await addLesson(title,words);setView('manage');toast('Đã đăng bài học mới.');if(CLOUD_ENABLED)await syncLessons({silent:true});}catch(e){toast(e.message,'error');}break;}
     case 'reviewLesson':{if(!lesson)break;const records=Object.values(data.mistakes[lesson.id]||{}).filter(x=>MODE[x.mode]);if(!records.length)return toast('Không còn từ cần ôn.');const byMode={};for(const r of records)(byMode[r.mode]||(byMode[r.mode]=[])).push(r.wordId);const chosenMode=Object.keys(byMode).sort((a,b)=>byMode[b].length-byMode[a].length)[0];beginQuiz({lessonId:lesson.id,mode:chosenMode,wordIds:byMode[chosenMode]});if(Object.keys(byMode).length>1)toast('Đang ôn '+MODE[chosenMode].label+'. Các chế độ khác vẫn còn trong danh sách.');break;}
   }});
   document.addEventListener('change',e=>{if(e.target.id==='practice-lesson'){data.activeLessonId=e.target.value;save();render();}if(e.target.id==='question-count'){data.preferences.count=e.target.value;save();}});
   $('#file-picker').addEventListener('change',async e=>{if(e.target.files.length)await importFiles(e.target.files);e.target.value='';});
-  $('#backup-picker').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>12*1024*1024)throw Error('Bản sao quá lớn.');const json=JSON.parse(await f.text());if(!window.confirm(CLOUD_ENABLED?'Chỉ khôi phục thống kê cá nhân; không thay thế bài trên Supabase. Tiếp tục?':'Khôi phục bản sao sẽ thay thế dữ liệu hiện tại. Tiếp tục?'))return;restoreBackup(json);}catch(err){toast('Không thể khôi phục: '+err.message,'error');}finally{e.target.value='';}});
+  $('#backup-picker').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>12*1024*1024)throw Error('Bản sao quá lớn.');const json=JSON.parse(await f.text());if(!window.confirm(CLOUD_ENABLED?'Chỉ khôi phục tiến độ cá nhân; không thay đổi kho bài chung. Tiếp tục?':'Khôi phục bản sao sẽ thay thế dữ liệu hiện tại. Tiếp tục?'))return;restoreBackup(json);}catch(err){toast('Không thể khôi phục: '+err.message,'error');}finally{e.target.value='';}});
   document.addEventListener('dragenter',e=>{if(e.target.closest('#drop-zone')){e.preventDefault();$('#drop-zone').classList.add('dragging');}});
   document.addEventListener('dragover',e=>{const dz=e.target.closest('#drop-zone');if(dz){e.preventDefault();dz.classList.add('dragging');}});
   document.addEventListener('dragleave',e=>{const dz=e.target.closest('#drop-zone');if(dz&&!dz.contains(e.relatedTarget))dz.classList.remove('dragging');});
   document.addEventListener('drop',async e=>{const dz=e.target.closest('#drop-zone');if(dz){e.preventDefault();dz.classList.remove('dragging');if(e.dataTransfer?.files.length)await importFiles(e.dataTransfer.files);}});
-  document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='login-password'){e.preventDefault();signIn();return;}if(e.key==='Escape'&&activeModal){closeModal();return;}if(e.target.id==='drop-zone'&&(e.key==='Enter'||e.key===' ')){e.preventDefault();$('#file-picker').click();return;}if(e.target.closest('input,textarea,select')||activeModal)return;if(view==='practice'&&quiz&&!quiz.done){const q=quiz.questions[quiz.index];if(q.selected!==null&&e.key==='Enter')nextQuestion();else if(q.selected===null){const map={'1':0,'2':1,'3':2,'4':3,'a':0,'b':1,'c':2,'d':3};if(map[e.key.toLowerCase()]!==undefined)chooseAnswer(map[e.key.toLowerCase()]);}}});
+  document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='login-password'){e.preventDefault();signIn();return;}if(e.key==='Enter'&&e.target.id==='register-confirm'){e.preventDefault();signUp();return;}if(e.key==='Enter'&&e.target.id==='forgot-email'){e.preventDefault();forgotPassword();return;}if(e.key==='Escape'&&activeModal){closeModal();return;}if(e.target.id==='drop-zone'&&(e.key==='Enter'||e.key===' ')){e.preventDefault();$('#file-picker').click();return;}if(e.target.closest('input,textarea,select')||activeModal)return;if(view==='practice'&&quiz&&!quiz.done){const q=quiz.questions[quiz.index];if(q.selected!==null&&e.key==='Enter')nextQuestion();else if(q.selected===null){const map={'1':0,'2':1,'3':2,'4':3,'a':0,'b':1,'c':2,'d':3};if(map[e.key.toLowerCase()]!==undefined)chooseAnswer(map[e.key.toLowerCase()]);}}});
   document.addEventListener('click',e=>{if(e.target.id==='modal-overlay')closeModal();else if(e.target.id==='drop-zone')$('#file-picker').click();});
   window.addEventListener('storage',e=>{
     if(e.key===SESSION_KEY&&CLOUD_ENABLED){
       try{adminSession=e.newValue?JSON.parse(e.newValue):null;}catch{adminSession=null;}
-      isAdmin=false;
-      checkAdmin().then(()=>syncLessons({silent:true}));
+      isAdmin=false;progressReady=false;quiz=null;
+      (async()=>{if(adminSession){await initializeUserProgress();await checkAdmin();}else applyProgress(getLocalProgress(PROGRESS_KEY)||blankProgress());await syncLessons({silent:true});render();})();
     }
-    if(e.key===(CLOUD_ENABLED?PROGRESS_KEY:STORAGE)&&e.newValue){
-      if(!CLOUD_ENABLED){data=load();quiz=null;render();}
-      else{try{const p=JSON.parse(e.newValue);data.stats=p.stats||data.stats;data.activity=sanitizeActivity(p.activity);data.mistakes=p.mistakes||data.mistakes;data.preferences=p.preferences||data.preferences;}catch{}if(!quiz)render();}
+    if(!adminSession&&e.key===PROGRESS_KEY&&e.newValue){
+      try{applyProgress(JSON.parse(e.newValue));}catch{}if(!quiz)render();
     }
   });
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){flushStudyClock(true);save();}else{studyLastAt=Date.now();if(CLOUD_ENABLED&&Date.now()-cloudSyncedAt>12000)syncLessons({silent:true});}});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){flushStudyClock(true);save();if(progressDirty)flushRemoteProgress();}else{studyLastAt=Date.now();if(CLOUD_ENABLED&&Date.now()-cloudSyncedAt>12000)syncLessons({silent:true});}});
   window.addEventListener('pagehide',()=>{flushStudyClock(true);save();});
   setInterval(()=>{if(quiz&&!quiz.done)flushStudyClock();else studyLastAt=Date.now();},1000);
+  setInterval(()=>{if(progressDirty&&!progressBusy)flushRemoteProgress();else if(CLOUD_ENABLED&&adminSession?.user?.id&&Date.now()-lastProgressSync>45000)refreshUserProgress();},20000);
   window.addEventListener('focus',()=>{if(CLOUD_ENABLED&&Date.now()-cloudSyncedAt>12000)syncLessons({silent:true});});
   if(CLOUD_ENABLED){
-    // Polling không phụ thuộc Supabase Realtime: người dùng khác thấy cập nhật trong <=30 giây khi trang đang mở.
+    // Polling không phụ thuộc cơ chế realtime: người dùng khác thấy cập nhật trong <=30 giây khi trang đang mở.
     setInterval(()=>{if(document.visibilityState==='visible'&&!cloudBusy)syncLessons({silent:true});},30000);
-    (async()=>{if(adminSession)await checkAdmin();await syncLessons();})();
+    (async()=>{if(adminSession){await initializeUserProgress();await checkAdmin();}await syncLessons();await consumeEmailRedirect();})();
   }
 
   document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=icon(el.dataset.icon);});
